@@ -105,7 +105,7 @@ module superlu_mod
                                                    stype, dtype, mtype) &
             bind(c, name='dCreate_CompRowLoc_Matrix_dist')
             use iso_c_binding
-            type(c_ptr), value:: A                    ! Output: matrix handle
+            type(c_ptr) :: A                    ! Output: matrix handle
             integer(c_int), value :: m, n       ! Global matrix dimensions
             integer(c_int), value :: nnz_loc    ! Local non-zeros
             integer(c_int), value :: m_loc      ! Local rows
@@ -157,13 +157,13 @@ module superlu_mod
           use iso_c_binding
           import :: dScalePermstruct_t, dLUstruct_t, SuperLUStat_t, superlu_dist_options_t
           type(superlu_dist_options_t) :: options         ! by reference
-          type(c_ptr), value :: A, grid                   ! c_ptr to SuperMatrix and grid
+          type(c_ptr) :: A, grid                   ! c_ptr to SuperMatrix and grid
           type(dScalePermstruct_t) :: ScalePermstruct      ! by reference
-          type(c_ptr), value :: X                          ! c_loc(sol)
+          type(c_ptr) :: X                          ! c_loc(sol)
           integer(c_int), value :: ldx, nrhs
           type(dLUstruct_t) :: LUstruct                    ! by reference
           type(c_ptr), value :: SolveStruct               ! pass c_null_ptr if unused
-          type(c_ptr), value :: berr                       ! c_loc(berr_array)
+          type(c_ptr) :: berr                       ! c_loc(berr_array)
           type(SuperLUStat_t) :: stat                      ! by reference
           integer(c_int) :: info                            ! by reference
         end subroutine pdgssvx
