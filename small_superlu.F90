@@ -62,12 +62,11 @@ program small_superlu
 
   ! Set options
   call set_default_options_dist(options)
-  options%ColPerm = NATURAL
-  options%RowPerm = NOROWPERM
-  options%IterRefine = SLU_DOUBLE
+  options%ColPerm = 3
+  options%RowPerm = 1
 
   ! Solve Ax = b
-  call pdgssvx(options, A, ScalePermstruct, c_loc(b), m_loc, 1, grid, LUstruct, c_loc(berr), stat, info)
+  call pdgssvx(options, A, ScalePermstruct, c_loc(b), m_loc, 1, grid, LUstruct, c_null_ptr, c_loc(berr), stat, info)
 
   ! Print solution (just proc 0)
   if (iam == 0) then

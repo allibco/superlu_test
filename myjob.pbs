@@ -1,0 +1,21 @@
+#!/bin/bash -l
+
+#PBS -A NTDD0004
+#PBS -N small_super
+#PBS -q main       
+#PBS -l walltime=00:05:00    
+#PBS -l select=1:ncpus=2:mpiprocs=2
+#PBS -j oe                   
+
+# Set up temporary directory (recommended for I/O intensive jobs)
+export TMPDIR=${SCRATCH}/temp
+mkdir -p ${TMPDIR}
+
+# Load necessary modules
+module load intel/2023.0.0
+module load cray-mpich/8.1.25
+module load superlu-dist/9.1.0
+
+
+# Execute your  program
+mpibind ./small_superlu.exe
