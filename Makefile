@@ -3,7 +3,7 @@
 
 # Compiler (Cray MPI wrapper)
 FC      = ftn
-FFLAGS  = -O2 -fopenmp
+FFLAGS  = -g
 LDFLAGS =
 
 # SuperLU_DIST install root

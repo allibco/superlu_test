@@ -12,7 +12,6 @@ program small_superlu
   type(superlu_dist_options_t) :: options
   type(SuperLUStat_t) :: stat
 
-
   ! Local matrix storage
   integer(C_INT) :: iam, nprow, npcol, nprocs, info, nrhs
   integer(C_INT) :: m_loc, fst_row
@@ -21,14 +20,30 @@ program small_superlu
   integer(C_INT), allocatable, target :: rowptr(:), colind(:)
   real(C_DOUBLE), allocatable, target :: nzval(:), b(:), berr(:)
 
+
+
+! SuperLU_DIST enum constants (from supermatrix.h)
+  integer(C_INT), parameter :: SLU_NR_loc = 7
+  integer(C_INT), parameter :: SLU_D = 1
+  integer(C_INT), parameter :: SLU_GE = 0
+
+  
   call MPI_Init(info)
   call MPI_Comm_rank(MPI_COMM_WORLD, iam, info)
   call MPI_Comm_size(MPI_COMM_WORLD, nprocs, info)
 
+! Check we have exactly 2 processes
+  if (nprocs /= 2) then
+     if (iam == 0) print *, "This example requires exactly 2 MPI processes"
+     call MPI_Finalize(info)
+     stop
+  end if
+  
   ! Create 1D process grid
   nprow = nprocs
   npcol = 1
   call superlu_gridinit(MPI_COMM_WORLD, nprow, npcol, grid)
+  print *, "GRIDINIT"
 
   ! Local matrix partition (2 rows per proc for 4×4)
   if (iam == 0) then
@@ -52,8 +67,13 @@ program small_superlu
   end if
 
   ! Create distributed matrix A
-  call dCreate_CompRowLoc_Matrix_dist(A, n, n, m_loc, nnz_loc, &
-       fst_row, c_loc(nzval), c_loc(colind), c_loc(rowptr), 0,1,0)
+  call dCreate_CompRowLoc_Matrix_dist(A, n, n, nnz_loc, m_loc, &
+       fst_row, c_loc(nzval(1)), c_loc(colind(1)), c_loc(rowptr(0)), SLU_NR_loc, SLU_D, SLU_GE)
+  write(*,*) "created A"
+  if (.not. c_associated(A)) then
+     write(*,*) "ERROR rank ", iam, ": A is NULL after creation"
+  endif
+    
 
   ! Initialize SuperLU_DIST structures
   call dScalePermstructInit(n, n, ScalePermstruct)
@@ -66,7 +86,7 @@ program small_superlu
   options%RowPerm = 1
 
   ! Solve Ax = b
-  call pdgssvx(options, A, ScalePermstruct, c_loc(b), m_loc, 1, grid, LUstruct, c_null_ptr, c_loc(berr), stat, info)
+  call pdgssvx(options, A, ScalePermstruct, c_loc(b(1)), m_loc, 1, grid, LUstruct, c_null_ptr, c_loc(berr(1)), stat, info)
 
   ! Print solution (just proc 0)
   if (iam == 0) then
@@ -87,6 +107,9 @@ program small_superlu
   call PStatFree(stat)
   call superlu_gridexit(grid)
 
+  deallocate(rowptr, colind, nzval, b, berr)
+
+  
   call MPI_Finalize()
 
 end program

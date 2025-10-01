@@ -95,7 +95,7 @@ module superlu_mod
             integer(c_int), value :: comm    ! MPI communicator (converted to C)
             integer(c_int), value :: nprow   ! Number of process rows
             integer(c_int), value :: npcol   ! Number of process columns
-            type(c_ptr) :: grid              ! Output: grid handle
+            type(c_ptr), intent(out) :: grid              ! Output: grid handle
         end subroutine
 
 
@@ -105,7 +105,7 @@ module superlu_mod
                                                    stype, dtype, mtype) &
             bind(c, name='dCreate_CompRowLoc_Matrix_dist')
             use iso_c_binding
-            type(c_ptr):: A                    ! Output: matrix handle
+            type(c_ptr), value:: A                    ! Output: matrix handle
             integer(c_int), value :: m, n       ! Global matrix dimensions
             integer(c_int), value :: nnz_loc    ! Local non-zeros
             integer(c_int), value :: m_loc      ! Local rows
@@ -130,7 +130,7 @@ module superlu_mod
           use iso_c_binding
           import :: dScalePermstruct_t
           integer(c_int), value :: m, n
-          type(dScalePermstruct_t) :: ScalePermstruct
+          type(dScalePermstruct_t), intent(out) :: ScalePermstruct
         end subroutine
 
         ! Initialize LU structure
@@ -139,7 +139,7 @@ module superlu_mod
           use iso_c_binding
           import :: dLUstruct_t
           integer(c_int), value :: n
-          type(dLUstruct_t) :: LUstruct
+          type(dLUstruct_t), intent(out) :: LUstruct
         end subroutine dLUstructInit
         
         ! Initialize statistics
@@ -147,7 +147,7 @@ module superlu_mod
             bind(c, name='PStatInit')
           use iso_c_binding
           import :: SuperLUStat_t
-          type(SuperLUStat_t) :: stat
+          type(SuperLUStat_t), intent(out) :: stat
         end subroutine PStatInit
 
         
@@ -177,16 +177,14 @@ module superlu_mod
         end subroutine PStatPrint
         
         !super lu matvec routine (internal - not typically called by user, would need the init also)
-        function pdgsmv(n, A, x, ax) &
-             bind(C, name="pdgsmv")
-          use iso_c_binding
-          integer(c_int), value :: n
-          type(c_ptr), value :: A
-          real(c_double) :: x(*)
-          real(c_double) :: ax(*)
-          integer(c_int) :: pdgsmv
-        end function pdgsmv
-       
+       function pdgsmv(n, A, x_ptr, ax_ptr) bind(C, name="pdgsmv")
+         use iso_c_binding
+         integer(c_int), value :: n
+         type(c_ptr), value :: A
+         type(c_ptr), value :: x_ptr    ! double*
+         type(c_ptr), value :: ax_ptr   ! double*
+         integer(c_int) :: pdgsmv
+       end function pdgsmv
           
         ! Cleanup functions
         subroutine superlu_gridexit(grid) &
