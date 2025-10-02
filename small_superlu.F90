@@ -110,7 +110,7 @@ program small_superlu
 
 !  deallocate the storage allocated by SuperLU_DIST
   call f_PStatFree(stat)
-  call f_Destroy_CompRowLoc_Mat_dist(A)
+!  call f_Destroy_CompRowLoc_Mat_dist(A)
   call f_dScalePermstructFree(ScalePermstruct)
   call f_dDestroy_LU_SOLVE_struct(options, n, grid, LUstruct, SOLVEstruct)
 
