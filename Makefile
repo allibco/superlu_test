@@ -27,17 +27,20 @@ MKL_LIBS = -Wl,--start-group \
 LIBS = -lsuperlu_dist $(MKL_LIBS)
 
 
-OBJS = superlu_mod.o small_superlu.o
+OBJS = superlu_mod.o small_superlu.o superlupara.o
 
 all: small_superlu.exe
 
 small_superlu.exe: $(OBJS)
 	$(FC) $(FFLAGS) -o $@ $(OBJS) $(LIBS)
 
-superlu_mod.o: superlu_mod.f90
+superlu_mod.o: superlu_mod.f90 superlupara.o
 	$(FC) $(FFLAGS) $(INCLUDES) -c $<
 
-small_superlu.o: small_superlu.F90 superlu_mod.o
+superlupara.o: superlupara.f90 
+	$(FC) $(FFLAGS) $(INCLUDES) -c $<
+
+small_superlu.o: small_superlu.F90 superlu_mod.o superlupara.o
 	$(FC) $(FFLAGS) $(INCLUDES) -c $<
 
 clean:
