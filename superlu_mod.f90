@@ -156,16 +156,16 @@ module superlu_mod
                    SolveStruct, berr, stat, info) bind(c, name='pdgssvx')
           use iso_c_binding
           import :: dScalePermstruct_t, dLUstruct_t, SuperLUStat_t, superlu_dist_options_t
-          type(superlu_dist_options_t) :: options         ! by reference
-          type(c_ptr) :: A, grid                   ! c_ptr to SuperMatrix and grid
-          type(dScalePermstruct_t) :: ScalePermstruct      ! by reference
-          type(c_ptr) :: X                          ! c_loc(sol)
+          type(superlu_dist_options_t),  intent(in) :: options 
+          type(c_ptr), value :: A, grid                   ! c_ptr to SuperMatrix and grid
+          type(dScalePermstruct_t),  intent(inout) :: ScalePermstruct      ! by reference
+          type(c_ptr), value :: X                          ! c_loc(sol)
           integer(c_int), value :: ldx, nrhs
-          type(dLUstruct_t) :: LUstruct                    ! by reference
+          type(dLUstruct_t),  intent(inout) :: LUstruct                    ! by reference
           type(c_ptr), value :: SolveStruct               ! pass c_null_ptr if unused
           type(c_ptr) :: berr                       ! c_loc(berr_array)
-          type(SuperLUStat_t) :: stat                      ! by reference
-          integer(c_int) :: info                            ! by reference
+          type(SuperLUStat_t),  intent(inout) :: stat                      ! by reference
+          integer(c_int),  intent(out) :: info                            ! by reference
         end subroutine pdgssvx
 
         subroutine PStatPrint(options, stat, grid) bind(C, name="PStatPrint")
