@@ -2,9 +2,9 @@ program small_superlu
 
   #include "superlu_dist_config.fh"
   use superlu_mod
+  use iso_c_binding
   include 'mpif.h'
       
-  implicit none
 
   ! Local matrix storage
   integer :: iam, nprow, npcol, nprocs, info, i
