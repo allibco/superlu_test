@@ -3,6 +3,9 @@ program small_superlu
   use superlu_mod   ! Assume you have interfaces for C bindings here
   implicit none
 
+#include "superlu_dist_config.fh"
+      use superlu_mod
+  
   include 'mpif.h'
 
   ! SuperLU types
@@ -13,27 +16,37 @@ program small_superlu
   type(SuperLUStat_t) :: stat
 
   ! Local matrix storage
-  integer(C_INT) :: iam, nprow, npcol, nprocs, info
-  integer(C_INT) :: m_loc, fst_row
-  integer(C_INT) :: n = 4   ! Global size
-  integer(C_INT) :: nrhs = 1
-  integer(C_INT) :: nnz_loc
-  integer(C_INT), allocatable, target :: rowptr(:), colind(:)
-  real(C_DOUBLE), allocatable, target :: nzval(:), b(:), berr(:)
+  integer :: iam, nprow, npcol, nprocs, info
+  integer :: m_loc, fst_row
+  integer :: n = 4   ! Global size
+  integer :: nrhs = 1
+  integer :: nnz_loc
+  integer(kind=c_int), allocatable, target :: rowptr(:), colind(:)
+  real(kind=c_double), allocatable, target :: nzval(:), b(:), berr(:)
 
-
-
-! SuperLU_DIST enum constants (from supermatrix.h)
-  integer(C_INT), parameter :: SLU_NR_loc = 7
-  integer(C_INT), parameter :: SLU_D = 1
-  integer(C_INT), parameter :: SLU_GE = 0
-
-
-  A = c_null_ptr
+  !superlu structures
+  integer(superlu_ptr) :: grid
+  integer(superlu_ptr) :: options
+  integer(superlu_ptr) :: ScalePermstruct
+  integer(superlu_ptr) :: LUstruct
+  integer(superlu_ptr) :: SOLVEstruct
+  integer(superlu_ptr) :: A
+  integer(superlu_ptr) :: stat
   
+
   call MPI_Init(info)
   call MPI_Comm_rank(MPI_COMM_WORLD, iam, info)
   call MPI_Comm_size(MPI_COMM_WORLD, nprocs, info)
+
+
+! Create Fortran handles for the C structures used in SuperLU_DIST
+  call f_create_gridinfo_handle(grid)
+  call f_create_options_handle(options)
+  call f_dcreate_ScalePerm_handle(ScalePermstruct)
+  call f_dcreate_LUstruct_handle(LUstruct)
+  call f_dcreate_SOLVEstruct_handle(SOLVEstruct)
+  call f_create_SuperMatrix_handle(A)
+  call f_create_SuperLUStat_handle(stat)
 
 ! Check we have exactly 2 processes
   if (nprocs /= 2) then
@@ -42,11 +55,11 @@ program small_superlu
      stop
   end if
   
-  ! Create 1D process grid
+  ! Create the process grid
   nprow = nprocs
   npcol = 1
-  call superlu_gridinit(MPI_COMM_WORLD, nprow, npcol, grid)
-  print *, "GRIDINIT"
+  call f_superlu_gridinit(MPI_COMM_WORLD, nprow, npcol, grid)
+  print *, "GRIDINIT done"
 
   ! Local matrix partition (2 rows per proc for 4×4)
   if (iam == 0) then
@@ -69,61 +82,61 @@ program small_superlu
      b = [7.0d0, 8.0d0]
   end if
 
+  print *, "Rank", iam, "m_loc=", m_loc, "nnz_loc=", nnz_loc, "fst_row=", fst_row
 
-    write(*,*) "rowptr=", rowptr(0:m_loc)
-    write(*,*) "colind=", colind(1:nnz_loc)
-    write(*,*) "values=", nzval(1:nnz_loc)
+  ! Create the distributed compressed row matrix pointed to by the F90 handle A
+  call f_dCreate_CompRowLoc_Mat_dist(A, n, n, nnz_loc, m_loc, fst_row, &
+       nzval, colind, rowptr, SLU_NR_loc, SLU_D, SLU_GE)
 
-    print *, "Rank", iam, "m_loc=", m_loc, "nnz_loc=", nnz_loc, "fst_row=", fst_row
+  ! Set the default input options
+  call f_set_default_options(options)
 
-    
-  ! Create distributed matrix A
-    call dCreate_CompRowLoc_Matrix_dist(A, n, n, nnz_loc, m_loc, &
-       fst_row, c_loc(nzval(1)), c_loc(colind(1)), c_loc(rowptr(0)), SLU_NR_loc, SLU_D, SLU_GE)
-    write(*,*) "created A"
-    if (.not. c_associated(A)) then
-       write(*,*) "ERROR rank ", iam, ": A is NULL after creation"
-    endif
-    
+  ! Change one or more options
+  !could also try ColPerm=NATURAL, RowPerm=NOROWPERM)
+  call set_superlu_options(options,ColPerm=COLAMD)
+  call set_superlu_options(options,RowPerm=LargeDiag_MC64)
+  
+  ! Initialize ScalePermstruct and LUstruct
+  call get_SuperMatrix(A, nrow=n, ncol=n)
+  call f_dScalePermstructInit(n, n, ScalePermstruct)
+  call f_dLUstructInit(n, n, LUstruct)
 
-  ! Initialize SuperLU_DIST structures
-  call dScalePermstructInit(n, n, ScalePermstruct)
-  call dLUstructInit(n, LUstruct)
-  call PStatInit(stat)
-
-  ! Set options
-  call set_default_options_dist(options)
-  options%ColPerm = 3
-  options%RowPerm = 1
-
+  ! Initialize the statistics variables
+  call f_PStatInit(stat)
+  
 
   write(*,*) "calling pdgssvx"
 
-  ! Solve Ax = b
-  call pdgssvx(options, A, ScalePermstruct, c_loc(b(1)), m_loc, 1, grid, LUstruct, c_null_ptr, c_loc(berr(1)), stat, info)
-
-  ! Print solution (just proc 0)
-  if (iam == 0) then
-     print *, "INFO =", info
-     print *, "Solution x:"
-     print *, b(1:2)
-  else
-     print *, "Rank", iam, "solution x:"
-     print *, b(1:2)
-  end if
-
-  ! Cleanup
+  ! Call the linear equation solver
+  call f_pdgssvx(options, A, ScalePermstruct, b, m_loc, nrhs, &
+       grid, LUstruct, SOLVEstruct, berr, stat, info)
   
-  call Destroy_SuperMatrix_Store_dist(A)
-  call dScalePermstructFree(ScalePermstruct)
-  call dLUstructFree(LUstruct)
-  call dDestroy_LU(n,grid,LUstruct)
-  call PStatFree(stat)
-  call superlu_gridexit(grid)
+  if (info == 0 .and. iam == 1) then
+     write (*,*) 'Backward error: ', (berr(i), i = 1, nrhs)
+  else
+     write(*,*) 'INFO from f_pdgssvx = ', info
+  endif
 
+!  deallocate the storage allocated by SuperLU_DIST
+  call f_PStatFree(stat)
+  call f_Destroy_CompRowLoc_Mat_dist(A)
+  call f_dScalePermstructFree(ScalePermstruct)
+  call f_dDestroy_LU_SOLVE_struct(options, n, grid, LUstruct, SOLVEstruct)
+
+! Release the SuperLU process grid
+  call f_superlu_gridexit(grid)
+
+! Deallocate the C structures pointed to by the Fortran handles
+  call f_destroy_gridinfo_handle(grid)
+  call f_destroy_options_handle(options)
+  call f_destroy_ScalePerm_handle(ScalePermstruct)
+  call f_destroy_LUstruct_handle(LUstruct)
+  call f_destroy_SOLVEstruct_handle(SOLVEstruct)
+  call f_destroy_SuperMatrix_handle(A)
+  call f_destroy_SuperLUStat_handle(stat)
+  
   deallocate(rowptr, colind, nzval, b, berr)
 
-  
   call MPI_Finalize()
 
 end program
