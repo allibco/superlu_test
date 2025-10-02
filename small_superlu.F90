@@ -8,15 +8,8 @@ program small_superlu
   
   include 'mpif.h'
 
-  ! SuperLU types
-  type(c_ptr) :: A, grid
-  type(dScalePermstruct_t) :: ScalePermstruct
-  type(dLUstruct_t) :: LUstruct
-  type(superlu_dist_options_t) :: options
-  type(SuperLUStat_t) :: stat
-
   ! Local matrix storage
-  integer :: iam, nprow, npcol, nprocs, info
+  integer :: iam, nprow, npcol, nprocs, info, i
   integer :: m_loc, fst_row
   integer :: n = 4   ! Global size
   integer :: nrhs = 1
