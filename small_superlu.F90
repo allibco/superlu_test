@@ -1,12 +1,10 @@
 program small_superlu
-  use iso_c_binding
-  use superlu_mod   ! Assume you have interfaces for C bindings here
-  implicit none
 
-#include "superlu_dist_config.fh"
-      use superlu_mod
-  
+  #include "superlu_dist_config.fh"
+  use superlu_mod
   include 'mpif.h'
+      
+  implicit none
 
   ! Local matrix storage
   integer :: iam, nprow, npcol, nprocs, info, i
