@@ -24,8 +24,7 @@ MKL_LIBS = -Wl,--start-group \
            -Wl,--end-group -lpthread -lm -ldl
 
 # SuperLU_DIST + MKL
-LIBS = -lsuperlu_dist $(MKL_LIBS)
-
+LIBS = -lsuperlu_dist_fortran -lsuperlu_dist $(MKL_LIBS)
 
 OBJS = superlu_mod.o small_superlu.o superlupara.o
 
