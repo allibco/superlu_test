@@ -126,7 +126,8 @@ program small_superlu
   call f_destroy_SuperMatrix_handle(A)
   call f_destroy_SuperLUStat_handle(stat)
   
-  deallocate(rowptr, colind, nzval, b, berr)
+  !deallocate(rowptr, colind, nzval)
+  deallocate(b, berr)
 
   call MPI_Finalize()
 
