@@ -3,18 +3,20 @@ program small_superlu
   #include "superlu_dist_config.fh"
   use superlu_mod
   use iso_c_binding
-  include 'mpif.h'
+  use mpi
       
 
   ! Local matrix storage
-  integer :: iam, nprow, npcol, nprocs, info, i
+  integer :: iam, nprow, npcol, nprocs, info, i, ierr
   integer :: m_loc, fst_row
   integer :: n = 4   ! Global size
   integer :: nrhs = 1
   integer :: nnz_loc
-  integer(kind=c_int), allocatable :: rowptr(:), colind(:)
+  !integer(kind=c_int), allocatable :: rowptr(:), colind(:)
   real(kind=c_double), allocatable :: nzval(:), b(:), berr(:)
+  integer, allocatable :: rowptr(:), colind(:)
 
+  
   !superlu structures
   integer(superlu_ptr) :: grid
   integer(superlu_ptr) :: options
@@ -25,9 +27,9 @@ program small_superlu
   integer(superlu_ptr) :: stat
   
 
-  call MPI_Init(info)
-  call MPI_Comm_rank(MPI_COMM_WORLD, iam, info)
-  call MPI_Comm_size(MPI_COMM_WORLD, nprocs, info)
+  call MPI_Init(ierr)
+  call MPI_Comm_rank(MPI_COMM_WORLD, iam, ierr)
+  call MPI_Comm_size(MPI_COMM_WORLD, nprocs, ierr)
 
 
 ! Create Fortran handles for the C structures used in SuperLU_DIST
@@ -38,15 +40,14 @@ program small_superlu
   call f_dcreate_SOLVEstruct_handle(SOLVEstruct)
   call f_create_SuperMatrix_handle(A)
   call f_create_SuperLUStat_handle(stat)
-
   
 ! Check we have exactly 2 processes
   if (nprocs /= 2) then
      if (iam == 0) print *, "This example requires exactly 2 MPI processes"
-     call MPI_Finalize(info)
+     call MPI_Finalize(ierr)
      stop
   end if
-  
+
 
   ! Create the process grid
   nprow = nprocs
@@ -132,11 +133,12 @@ program small_superlu
   call f_destroy_SuperMatrix_handle(A)
   call f_destroy_SuperLUStat_handle(stat)
 
-  !get a seg fault if i deallocate the rowptr????
-  !deallocate(rowptr)
+
+  
+  deallocate(rowptr)
   deallocate(colind, nzval)
   deallocate(b, berr)
 
-  call MPI_Finalize()
+  call MPI_Finalize(ierr)
 
 end program

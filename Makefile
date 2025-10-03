@@ -3,7 +3,7 @@
 
 # Compiler (Cray MPI wrapper)
 FC      = ftn
-FFLAGS  = -g
+FFLAGS  = -g -traceback -check bounds -check uninit 
 LDFLAGS =
 
 # SuperLU_DIST install root
