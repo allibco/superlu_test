@@ -12,8 +12,8 @@ program small_superlu
   integer :: n = 4   ! Global size
   integer :: nrhs = 1
   integer :: nnz_loc
-  integer(kind=c_int), allocatable, target :: rowptr(:), colind(:)
-  real(kind=c_double), allocatable, target :: nzval(:), b(:), berr(:)
+  integer(kind=c_int), allocatable :: rowptr(:), colind(:)
+  real(kind=c_double), allocatable :: nzval(:), b(:), berr(:)
 
   !superlu structures
   integer(superlu_ptr) :: grid
@@ -39,6 +39,7 @@ program small_superlu
   call f_create_SuperMatrix_handle(A)
   call f_create_SuperLUStat_handle(stat)
 
+  
 ! Check we have exactly 2 processes
   if (nprocs /= 2) then
      if (iam == 0) print *, "This example requires exactly 2 MPI processes"
@@ -46,18 +47,20 @@ program small_superlu
      stop
   end if
   
+
   ! Create the process grid
   nprow = nprocs
   npcol = 1
   call f_superlu_gridinit(MPI_COMM_WORLD, nprow, npcol, grid)
   print *, "GRIDINIT done"
 
+  
   ! Local matrix partition (2 rows per proc for 4×4)
   if (iam == 0) then
      m_loc = 2
      fst_row = 0
      nnz_loc = 4
-     allocate(rowptr(0:m_loc), colind(nnz_loc), nzval(nnz_loc), b(m_loc), berr(nrhs))
+     allocate(rowptr(m_loc+1), colind(nnz_loc), nzval(nnz_loc), b(m_loc), berr(nrhs))
      rowptr = [0, 2, 4] !0-based
      colind = [0, 1, 1, 2]
      nzval  = [1.0d0, 2.0d0, 3.0d0, 4.0d0]
@@ -66,7 +69,7 @@ program small_superlu
      m_loc = 2
      fst_row = 2
      nnz_loc = 4
-     allocate(rowptr(0:m_loc), colind(nnz_loc), nzval(nnz_loc), b(m_loc), berr(nrhs))
+     allocate(rowptr(m_loc+1), colind(nnz_loc), nzval(nnz_loc), b(m_loc), berr(nrhs))
      rowptr = [0, 2, 4] ! 0-based
      colind = [2, 3, 3, 0]
      nzval  = [5.0d0, 6.0d0, 7.0d0, 8.0d0]
@@ -74,6 +77,7 @@ program small_superlu
   end if
 
   print *, "Rank", iam, "m_loc=", m_loc, "nnz_loc=", nnz_loc, "fst_row=", fst_row
+
 
   ! Create the distributed compressed row matrix pointed to by the F90 handle A
   call f_dCreate_CompRowLoc_Mat_dist(A, n, n, nnz_loc, m_loc, fst_row, &
@@ -108,9 +112,11 @@ program small_superlu
      write(*,*) 'INFO from f_pdgssvx = ', info
   endif
 
-!  deallocate the storage allocated by SuperLU_DIST
+  
+  !deallocate the storage allocated by SuperLU_DIST
   call f_PStatFree(stat)
-!  call f_Destroy_CompRowLoc_Mat_dist(A)
+  !do not call - tries to free the fortran-allocated rowptr,colind and nzval array
+  !call f_Destroy_CompRowLoc_Mat_dist(A)
   call f_dScalePermstructFree(ScalePermstruct)
   call f_dDestroy_LU_SOLVE_struct(options, n, grid, LUstruct, SOLVEstruct)
 
@@ -125,8 +131,10 @@ program small_superlu
   call f_destroy_SOLVEstruct_handle(SOLVEstruct)
   call f_destroy_SuperMatrix_handle(A)
   call f_destroy_SuperLUStat_handle(stat)
-  
-  !deallocate(rowptr, colind, nzval)
+
+  !get a seg fault if i deallocate the rowptr????
+  !deallocate(rowptr)
+  deallocate(colind, nzval)
   deallocate(b, berr)
 
   call MPI_Finalize()
