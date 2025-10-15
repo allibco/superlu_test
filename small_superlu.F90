@@ -23,9 +23,10 @@ program small_superlu
   !integer(superlu_ptr) :: A
   integer(c_int64_t) :: A, grid
 
-  integer(superlu_ptr) :: options integer(superlu_ptr) ::
-  ScalePermstruct integer(superlu_ptr) :: LUstruct
-  integer(superlu_ptr) :: SOLVEstruct integer(superlu_ptr) :: A
+  integer(superlu_ptr) :: options
+  integer(superlu_ptr) :: ScalePermstruct
+  integer(superlu_ptr) :: LUstruct
+  integer(superlu_ptr) :: SOLVEstruct
   integer(superlu_ptr) :: stat
 
   integer(c_int64_t) :: nnn = 4 !global size
