@@ -9,7 +9,7 @@ program small_superlu
   ! Local matrix storage
   integer :: iam, nprow, npcol, nprocs, info, i, ierr
   integer :: m_loc, fst_row
-  integer :: n = 4   ! Global size
+  !integer :: n = 4   ! Global size
   integer :: nrhs = 1
   integer :: nnz_loc
   !integer(kind=c_int), allocatable :: rowptr(:), colind(:)
@@ -25,7 +25,9 @@ program small_superlu
   integer(superlu_ptr) :: SOLVEstruct
   integer(superlu_ptr) :: A
   integer(superlu_ptr) :: stat
-  
+
+  integer(c_int64_t) :: n = 4 !global size
+
 
   call MPI_Init(ierr)
   call MPI_Comm_rank(MPI_COMM_WORLD, iam, ierr)
@@ -116,7 +118,7 @@ program small_superlu
   endif
 
   ! do y = A*x
-  call f_pdgsmv(options, A, x, y, grid)
+  call f_pdgsmv(n, A, grid, x, y)
   !this (y) should = b
 
   

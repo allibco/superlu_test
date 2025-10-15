@@ -1,12 +1,12 @@
 #include "superlu_ddefs.h"
 
+// Fortran-callable wrapper
 void f_pdgsmv(int_t *n, void *A, void *grid, double *x, double *y)
 {
-    pdgsmv_comm_t gsmv_comm;
+    SuperMatrix *pA = (SuperMatrix *)A;
+    gridinfo_t *pgrid = (gridinfo_t *)grid;
 
-    dInit_GSMV_comm((SuperMatrix *)A, (gridinfo_t *)grid, &gsmv_comm);
-
-    pdgsmv(*n, (SuperMatrix *)A, (gridinfo_t *)grid, &gsmv_comm, x, y);
-
-    dDestroy_GSMV_comm(&gsmv_comm);
+    // Direct call to pdgsmv
+    // pdgsmv is in libsuperlu_dist and can be linked
+    pdgsmv(*n, pA, pgrid, NULL, x, y);
 }
