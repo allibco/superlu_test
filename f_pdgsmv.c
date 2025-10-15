@@ -1,7 +1,4 @@
-
-
 #include "superlu_ddefs.h"
-#include "Cnames.h"
 
 void f_pdgsmv(int_t *n, void *A, void *grid, double *x, double *y)
 {
