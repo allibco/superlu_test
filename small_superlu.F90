@@ -2,9 +2,10 @@ program small_superlu
 
   #include "superlu_dist_config.fh"
   use superlu_mod
+  use superlu_bindings
   use iso_c_binding
   use mpi
-
+  
 
   ! Local matrix storage
   integer :: iam, nprow, npcol, nprocs, info, i, ierr
