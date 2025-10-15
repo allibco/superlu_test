@@ -5,6 +5,7 @@
 FC      = ftn
 FFLAGS  = -g -traceback -check bounds -check uninit 
 LDFLAGS =
+CC = cc
 
 # SuperLU_DIST install root
 SUPERLU_DIST = $(NCAR_ROOT_SUPERLU_DIST)
@@ -26,7 +27,7 @@ MKL_LIBS = -Wl,--start-group \
 # SuperLU_DIST + MKL
 LIBS = -lsuperlu_dist_fortran -lsuperlu_dist $(MKL_LIBS)
 
-OBJS = superlu_mod.o small_superlu.o superlupara.o
+OBJS = superlu_mod.o small_superlu.o superlupara.o superlu_bindings.o f_pdvsmv.o
 
 all: small_superlu.exe
 
@@ -39,8 +40,15 @@ superlu_mod.o: superlu_mod.f90 superlupara.o
 superlupara.o: superlupara.f90 
 	$(FC) $(FFLAGS) $(INCLUDES) -c $<
 
-small_superlu.o: small_superlu.F90 superlu_mod.o superlupara.o
+superlu_bindings.o: superlu_bindings.F90
 	$(FC) $(FFLAGS) $(INCLUDES) -c $<
+
+small_superlu.o: small_superlu.F90 superlu_mod.o superlupara.o f_pdvsmv.o
+	$(FC) $(FFLAGS) $(INCLUDES) -c $<
+
+f_pdgsmv.o: f_pdgsmv.c
+	$(CC) -c $(INCLUDES) $< -o $@
+
 
 clean:
 	rm -f *.o *.mod small_superlu.exe

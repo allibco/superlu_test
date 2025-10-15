@@ -4,7 +4,7 @@ program small_superlu
   use superlu_mod
   use iso_c_binding
   use mpi
-      
+
 
   ! Local matrix storage
   integer :: iam, nprow, npcol, nprocs, info, i, ierr
@@ -13,7 +13,7 @@ program small_superlu
   integer :: nrhs = 1
   integer :: nnz_loc
   !integer(kind=c_int), allocatable :: rowptr(:), colind(:)
-  real(kind=c_double), allocatable :: nzval(:), b(:), berr(:)
+  real(kind=c_double), allocatable :: nzval(:), b(:), berr(:), y(:), x(:)
   integer, allocatable :: rowptr(:), colind(:)
 
   
@@ -61,7 +61,7 @@ program small_superlu
      m_loc = 2
      fst_row = 0
      nnz_loc = 4
-     allocate(rowptr(m_loc+1), colind(nnz_loc), nzval(nnz_loc), b(m_loc), berr(nrhs))
+     allocate(rowptr(m_loc+1), colind(nnz_loc), nzval(nnz_loc), b(m_loc), berr(nrhs),  x(m_loc),  y(m_loc))
      rowptr = [0, 2, 4] !0-based
      colind = [0, 1, 1, 2]
      nzval  = [1.0d0, 2.0d0, 3.0d0, 4.0d0]
@@ -70,7 +70,7 @@ program small_superlu
      m_loc = 2
      fst_row = 2
      nnz_loc = 4
-     allocate(rowptr(m_loc+1), colind(nnz_loc), nzval(nnz_loc), b(m_loc), berr(nrhs))
+     allocate(rowptr(m_loc+1), colind(nnz_loc), nzval(nnz_loc), b(m_loc), berr(nrhs),  x(m_loc),  y(m_loc))
      rowptr = [0, 2, 4] ! 0-based
      colind = [2, 3, 3, 0]
      nzval  = [5.0d0, 6.0d0, 7.0d0, 8.0d0]
@@ -79,7 +79,7 @@ program small_superlu
 
   print *, "Rank", iam, "m_loc=", m_loc, "nnz_loc=", nnz_loc, "fst_row=", fst_row
 
-
+  
   ! Create the distributed compressed row matrix pointed to by the F90 handle A
   call f_dCreate_CompRowLoc_Mat_dist(A, n, n, nnz_loc, m_loc, fst_row, &
        nzval, colind, rowptr, SLU_NR_loc, SLU_D, SLU_GE)
@@ -99,12 +99,14 @@ program small_superlu
 
   ! Initialize the statistics variables
   call f_PStatInit(stat)
-  
+
+  !copy b into x
+  x = b
 
   write(*,*) "calling pdgssvx"
 
-  ! Call the linear equation solver
-  call f_pdgssvx(options, A, ScalePermstruct, b, m_loc, nrhs, &
+  ! Call the linear equation solver (soln overwrites x)
+  call f_pdgssvx(options, A, ScalePermstruct, x, m_loc, nrhs, &
        grid, LUstruct, SOLVEstruct, berr, stat, info)
   
   if (info == 0 .and. iam == 1) then
@@ -112,6 +114,10 @@ program small_superlu
   else
      write(*,*) 'INFO from f_pdgssvx = ', info
   endif
+
+  ! do y = A*x
+  call f_pdgsmv(options, A, x, y, grid)
+  !this (y) should = b
 
   
   !deallocate the storage allocated by SuperLU_DIST
