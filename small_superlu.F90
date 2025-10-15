@@ -19,7 +19,10 @@ program small_superlu
 
   
   !superlu structures
-  integer(superlu_ptr) :: grid
+  !integer(superlu_ptr) :: grid
+  !integer(superlu_ptr) :: A
+  integer(c_int64_t) :: A, grid
+
   integer(superlu_ptr) :: options
   integer(superlu_ptr) :: ScalePermstruct
   integer(superlu_ptr) :: LUstruct
@@ -148,7 +151,7 @@ program small_superlu
   
   deallocate(rowptr)
   deallocate(colind, nzval)
-  deallocate(b, berr)
+  deallocate(b, x, y, berr)
 
   call MPI_Finalize(ierr)
 
