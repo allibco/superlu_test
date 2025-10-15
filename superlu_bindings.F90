@@ -5,11 +5,11 @@ module superlu_bindings
         use iso_c_binding
         implicit none
         integer(c_int64_t), value :: n
-        integer(c_int64_t), value :: A_handle
-        integer(c_int64_t), value :: grid_handle
+        integer(superlu_ptr), value :: A_handle
+        integer(superlu_ptr), value :: grid_handle
         real(c_double) :: x(*)
         real(c_double) :: y(*)
-    end subroutine f_pdgsmv_handle
+    end subroutine f_pdgsmv
 end interface
 
 endmodule superlu_bindings
