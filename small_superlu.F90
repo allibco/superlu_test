@@ -19,15 +19,21 @@ program small_superlu
 
   
   !superlu structures
+ 
+  integer(c_int64_t) :: A, grid
+  integer(c_int64_t) :: options
+  integer(c_int64_t) :: ScalePermstruct
+  integer(c_int64_t) :: LUstruct
+  integer(c_int64_t) :: SOLVEstruct
+  integer(c_int64_t) :: stat
+
   !integer(superlu_ptr) :: grid
   !integer(superlu_ptr) :: A
-  integer(c_int64_t) :: A, grid
-
-  integer(superlu_ptr) :: options
-  integer(superlu_ptr) :: ScalePermstruct
-  integer(superlu_ptr) :: LUstruct
-  integer(superlu_ptr) :: SOLVEstruct
-  integer(superlu_ptr) :: stat
+  !integer(superlu_ptr) :: options
+  !integer(superlu_ptr) :: ScalePermstruct
+  !integer(superlu_ptr) :: LUstruct
+  !integer(superlu_ptr) :: SOLVEstruct
+  !integer(superlu_ptr) :: stat
 
   integer(c_int64_t) :: nnn = 4 !global size
 
