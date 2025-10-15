@@ -45,6 +45,9 @@ program small_superlu
   call f_dcreate_SOLVEstruct_handle(SOLVEstruct)
   call f_create_SuperMatrix_handle(A)
   call f_create_SuperLUStat_handle(stat)
+
+  print *, 'rank', iam, 'handles: A=', A, 'grid=', grid, 'options=', options
+
   
 ! Check we have exactly 2 processes
   if (nprocs /= 2) then
@@ -59,6 +62,7 @@ program small_superlu
   npcol = 1
   call f_superlu_gridinit(MPI_COMM_WORLD, nprow, npcol, grid)
   print *, "GRIDINIT done"
+  print *, 'rank', iam, 'after gridinit: grid=', grid
 
   
   ! Local matrix partition (2 rows per proc for 4×4)
@@ -108,6 +112,11 @@ program small_superlu
   !copy b into x
   x = b
 
+  ! ---- test matvec BEFORE solve
+  nnn = n
+  call f_pdgsmv(nnn, A, grid, x, y)
+  print *, 'rank', iam, 'pdgsmv BEFORE solver, y=', y
+  
   write(*,*) "calling pdgssvx"
 
   ! Call the linear equation solver (soln overwrites x)
@@ -126,6 +135,7 @@ program small_superlu
   !this (y) should = b
   print *, 'b = ', b
   print *, 'Ax = ', y
+  print *, 'rank', iam, 'pdgsmv AFTER solver, y=', y
   
   !deallocate the storage allocated by SuperLU_DIST
   call f_PStatFree(stat)
