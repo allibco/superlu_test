@@ -122,7 +122,8 @@ program small_superlu
   nnn=n
   call f_pdgsmv(nnn, A, grid, x, y)
   !this (y) should = b
-
+  print *, 'b = ', b
+  print *, 'Ax = ', y
   
   !deallocate the storage allocated by SuperLU_DIST
   call f_PStatFree(stat)
