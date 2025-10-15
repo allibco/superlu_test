@@ -27,7 +27,7 @@ MKL_LIBS = -Wl,--start-group \
 # SuperLU_DIST + MKL
 LIBS = -lsuperlu_dist_fortran -lsuperlu_dist $(MKL_LIBS)
 
-OBJS = superlu_mod.o small_superlu.o superlupara.o superlu_bindings.o f_pdvsmv.o
+OBJS = superlu_mod.o small_superlu.o superlupara.o superlu_bindings.o f_pdgsmv.o
 
 all: small_superlu.exe
 
@@ -43,7 +43,7 @@ superlupara.o: superlupara.f90
 superlu_bindings.o: superlu_bindings.F90
 	$(FC) $(FFLAGS) $(INCLUDES) -c $<
 
-small_superlu.o: small_superlu.F90 superlu_mod.o superlupara.o f_pdvsmv.o
+small_superlu.o: small_superlu.F90 superlu_mod.o superlupara.o f_pdgsmv.o
 	$(FC) $(FFLAGS) $(INCLUDES) -c $<
 
 f_pdgsmv.o: f_pdgsmv.c
