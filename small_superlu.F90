@@ -15,7 +15,8 @@ program small_superlu
   integer :: nnz_loc
   !integer(kind=c_int), allocatable :: rowptr(:), colind(:)
   real(kind=c_double), allocatable :: nzval(:), b(:), berr(:), y(:), x(:)
-  integer, allocatable :: rowptr(:), colind(:), row_to_proc(:)
+  integer, allocatable :: rowptr(:), colind(:)
+  integer, allocatable, target:: row_to_proc(:)
 
   
   !superlu structures
@@ -137,7 +138,7 @@ program small_superlu
   ! Allocate the communication structure
 
   ! Initialize pdgsmv communication
-  call f_pdgsmv_init(A, row_to_proc, grid, gsmv_comm_handle)
+  call f_pdgsmv_init(A, c_loc(row_to_proc), grid, gsmv_comm_handle)
 
   ! Now you can use pdgsmv multiple times
   call f_pdgsmv(0_c_int64_t, A, grid, gsmv_comm_handle, x, y)
