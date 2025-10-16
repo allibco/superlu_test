@@ -157,6 +157,9 @@ program small_superlu
   ! Call the linear equation solver (soln overwrites x)
   call f_pdgssvx(options, A, ScalePermstruct, x, m_loc, nrhs, &
        grid, LUstruct, SOLVEstruct, berr, stat, info)
+
+  print *, 'rank', iam, 'AFTER solver x=', x
+
   
   if (info == 0 .and. iam == 1) then
      write (*,*) 'Backward error: ', (berr(i), i = 1, nrhs)
