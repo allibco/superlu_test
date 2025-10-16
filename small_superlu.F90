@@ -58,7 +58,7 @@ program small_superlu
 
   gsmv_comm_handle = f_pdgsmv_comm_create()
 
-  print *, 'rank', iam, 'handles: A=', A, 'grid=', grid, 'options=', options
+  !print *, 'rank', iam, 'handles: A=', A, 'grid=', grid, 'options=', options
 
   
 ! Check we have exactly 2 processes
@@ -73,8 +73,8 @@ program small_superlu
   nprow = nprocs
   npcol = 1
   call f_superlu_gridinit(MPI_COMM_WORLD, nprow, npcol, grid)
-  print *, "GRIDINIT done"
-  print *, 'rank', iam, 'after gridinit: grid=', grid
+  !print *, "GRIDINIT done"
+  !print *, 'rank', iam, 'after gridinit: grid=', grid
 
   
   ! Local matrix partition (2 rows per proc for 4×4)
@@ -111,11 +111,11 @@ program small_superlu
        nzval, colind, rowptr, SLU_NR_loc, SLU_D, SLU_GE)
 
 ! After Create_CompRowLoc
-  print *, 'rank', iam, 'after Create_CompRowLoc: A=', A
-  print *, 'rank', iam, 'm_loc=', m_loc, 'fst_row=', fst_row, 'nnz_loc=', nnz_loc
-  print *, 'rank', iam, 'rowptr(1)=', rowptr(1), 'rowptr(m_loc+1)=', rowptr(m_loc+1)
-  print *, 'rank', iam, 'colind =', (colind(i), i=1,size(colind))
-  print *, 'rank', iam, 'nzval  =', (nzval(i), i=1,size(nzval))
+!  print *, 'rank', iam, 'after Create_CompRowLoc: A=', A
+!  print *, 'rank', iam, 'm_loc=', m_loc, 'fst_row=', fst_row, 'nnz_loc=', nnz_loc
+!  print *, 'rank', iam, 'rowptr(1)=', rowptr(1), 'rowptr(m_loc+1)=', rowptr(m_loc+1)
+!  print *, 'rank', iam, 'colind =', (colind(i), i=1,size(colind))
+!  print *, 'rank', iam, 'nzval  =', (nzval(i), i=1,size(nzval))
   
   ! Set the default input options
   call f_set_default_options(options)
@@ -148,7 +148,10 @@ program small_superlu
   print *, 'b = ', b
   print *, 'Ax = ', y
   print *, 'rank', iam, 'pdgsmv BEFORE solver', y
+  call f_pdgsmv_comm_destroy(gsmv_comm_handle)
 
+
+  
   write(*,*) "calling pdgssvx"
 
   ! Call the linear equation solver (soln overwrites x)
