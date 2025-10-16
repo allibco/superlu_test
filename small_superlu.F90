@@ -15,7 +15,7 @@ program small_superlu
   integer :: nnz_loc
   !integer(kind=c_int), allocatable :: rowptr(:), colind(:)
   real(kind=c_double), allocatable :: nzval(:), b(:), berr(:), y(:), x(:)
-  integer, allocatable :: rowptr(:), colind(:)
+  integer, allocatable :: rowptr(:), colind(:), row_to_proc(:)
 
   
   !superlu structures
@@ -26,6 +26,9 @@ program small_superlu
   integer(c_int64_t) :: LUstruct
   integer(c_int64_t) :: SOLVEstruct
   integer(c_int64_t) :: stat
+
+  integer(c_int64_t) :: gsmv_comm_handle
+
 
   !integer(superlu_ptr) :: grid
   !integer(superlu_ptr) :: A
@@ -51,6 +54,8 @@ program small_superlu
   call f_dcreate_SOLVEstruct_handle(SOLVEstruct)
   call f_create_SuperMatrix_handle(A)
   call f_create_SuperLUStat_handle(stat)
+
+  gsmv_comm_handle = f_pdgsmv_comm_create()
 
   print *, 'rank', iam, 'handles: A=', A, 'grid=', grid, 'options=', options
 
@@ -92,6 +97,9 @@ program small_superlu
      b = [7.0d0, 8.0d0]
   end if
 
+  allocate(row_to_proc(n))
+  row_to_proc=[ 0, 0, 1, 1]
+  
   print *, "Rank", iam, "m_loc=", m_loc, "nnz_loc=", nnz_loc, "fst_row=", fst_row
 
   
@@ -99,6 +107,13 @@ program small_superlu
   call f_dCreate_CompRowLoc_Mat_dist(A, n, n, nnz_loc, m_loc, fst_row, &
        nzval, colind, rowptr, SLU_NR_loc, SLU_D, SLU_GE)
 
+! After Create_CompRowLoc
+  print *, 'rank', iam, 'after Create_CompRowLoc: A=', A
+  print *, 'rank', iam, 'm_loc=', m_loc, 'fst_row=', fst_row, 'nnz_loc=', nnz_loc
+  print *, 'rank', iam, 'rowptr(1)=', rowptr(1), 'rowptr(m_loc+1)=', rowptr(m_loc+1)
+  print *, 'rank', iam, 'colind =', (colind(i), i=1,size(colind))
+  print *, 'rank', iam, 'nzval  =', (nzval(i), i=1,size(nzval))
+  
   ! Set the default input options
   call f_set_default_options(options)
 
@@ -119,10 +134,18 @@ program small_superlu
   x = b
 
   ! ---- test matvec BEFORE solve
-  nnn = n
-  call f_pdgsmv(nnn, A, grid, x, y)
-  print *, 'rank', iam, 'pdgsmv BEFORE solver, y=', y
-  
+  ! Allocate the communication structure
+
+  ! Initialize pdgsmv communication
+  call f_pdgsmv_init(A, row_to_proc, grid, gsmv_comm_handle)
+
+  ! Now you can use pdgsmv multiple times
+  call f_pdgsmv(0_c_int64_t, A, grid, gsmv_comm_handle, x, y)
+
+  print *, 'b = ', b
+  print *, 'Ax = ', y
+  print *, 'rank', iam, 'pdgsmv BEFORE solver', y
+
   write(*,*) "calling pdgssvx"
 
   ! Call the linear equation solver (soln overwrites x)
@@ -166,7 +189,7 @@ program small_superlu
   
   deallocate(rowptr)
   deallocate(colind, nzval)
-  deallocate(b, x, y, berr)
+  deallocate(b, x, y, berr, row_to_proc)
 
   call MPI_Finalize(ierr)
 
