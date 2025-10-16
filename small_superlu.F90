@@ -27,7 +27,7 @@ program small_superlu
   integer(c_int64_t) :: LUstruct
   integer(c_int64_t) :: SOLVEstruct
   integer(c_int64_t) :: stat
-
+   integer(c_int64_t) :: row_to_proc_handle
   integer(c_int64_t) :: gsmv_comm_handle
 
 
@@ -100,6 +100,8 @@ program small_superlu
 
   allocate(row_to_proc(n))
   row_to_proc=[ 0, 0, 1, 1]
+  row_to_proc_handle = transfer(c_loc(row_to_proc), row_to_proc_handle)
+
   
   print *, "Rank", iam, "m_loc=", m_loc, "nnz_loc=", nnz_loc, "fst_row=", fst_row
 
@@ -138,7 +140,7 @@ program small_superlu
   ! Allocate the communication structure
 
   ! Initialize pdgsmv communication
-  call f_pdgsmv_init(A, c_loc(row_to_proc), grid, gsmv_comm_handle)
+  call f_pdgsmv_init(A, row_to_proc_handle, grid, gsmv_comm_handle)
 
   ! Now you can use pdgsmv multiple times
   call f_pdgsmv(0_c_int64_t, A, grid, gsmv_comm_handle, x, y)
@@ -160,12 +162,12 @@ program small_superlu
   endif
 
   ! do y = A*x
-  nnn=n
-  call f_pdgsmv(nnn, A, grid, x, y)
+  !nnn=n
+  !!call f_pdgsmv(nnn, A, grid, x, y)
   !this (y) should = b
-  print *, 'b = ', b
-  print *, 'Ax = ', y
-  print *, 'rank', iam, 'pdgsmv AFTER solver, y=', y
+  !print *, 'b = ', b
+  !print *, 'Ax = ', y
+  !print *, 'rank', iam, 'pdgsmv AFTER solver, y=', y
   
   !deallocate the storage allocated by SuperLU_DIST
   call f_PStatFree(stat)
