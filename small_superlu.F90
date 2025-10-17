@@ -124,7 +124,7 @@ program small_superlu
   ! Allocate the communication structure
 
   ! Initialize pdgsmv communication
-  call f_pdgsmv_init(A, row_to_proc_handle, grid, gsmv_comm_handle)
+  !call f_pdgsmv_init(A, row_to_proc_handle, grid, gsmv_comm_handle)
 
   ! Now you can use pdgsmv multiple times
   !call f_pdgsmv(0_c_int64_t, A, grid, gsmv_comm_handle, x, y)
@@ -151,6 +151,8 @@ program small_superlu
   endif
 
   ! do y = A*x (now x is soln , so y = b)
+  call f_pdgsmv_init(A, row_to_proc_handle, grid, gsmv_comm_handle)
+
   call f_pdgsmv(0_c_int64_t, A, grid, gsmv_comm_handle, x, y)
 
   print *, 'rank', iam,  'pdgsmv AFTER solver, x = ', x
