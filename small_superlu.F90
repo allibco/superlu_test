@@ -30,15 +30,6 @@ program small_superlu
    integer(c_int64_t) :: row_to_proc_handle
   integer(c_int64_t) :: gsmv_comm_handle
 
-
-  !integer(superlu_ptr) :: grid
-  !integer(superlu_ptr) :: A
-  !integer(superlu_ptr) :: options
-  !integer(superlu_ptr) :: ScalePermstruct
-  !integer(superlu_ptr) :: LUstruct
-  !integer(superlu_ptr) :: SOLVEstruct
-  !integer(superlu_ptr) :: stat
-
   integer(c_int64_t) :: nnn = 4 !global size
 
 
@@ -110,13 +101,6 @@ program small_superlu
   call f_dCreate_CompRowLoc_Mat_dist(A, n, n, nnz_loc, m_loc, fst_row, &
        nzval, colind, rowptr, SLU_NR_loc, SLU_D, SLU_GE)
 
-! After Create_CompRowLoc
-!  print *, 'rank', iam, 'after Create_CompRowLoc: A=', A
-!  print *, 'rank', iam, 'm_loc=', m_loc, 'fst_row=', fst_row, 'nnz_loc=', nnz_loc
-!  print *, 'rank', iam, 'rowptr(1)=', rowptr(1), 'rowptr(m_loc+1)=', rowptr(m_loc+1)
-!  print *, 'rank', iam, 'colind =', (colind(i), i=1,size(colind))
-!  print *, 'rank', iam, 'nzval  =', (nzval(i), i=1,size(nzval))
-  
   ! Set the default input options
   call f_set_default_options(options)
 
@@ -140,10 +124,10 @@ program small_superlu
   ! Allocate the communication structure
 
   ! Initialize pdgsmv communication
-  call f_pdgsmv_init(A, row_to_proc_handle, grid, gsmv_comm_handle)
+  !call f_pdgsmv_init(A, row_to_proc_handle, grid, gsmv_comm_handle)
 
   ! Now you can use pdgsmv multiple times
-  call f_pdgsmv(0_c_int64_t, A, grid, gsmv_comm_handle, x, y)
+  !call f_pdgsmv(0_c_int64_t, A, grid, gsmv_comm_handle, x, y)
 
   print *, 'rank', iam,  'pdgsmv BEFORE solver: x = ', x
   print *, 'rank', iam,  'pdgsmv BEFORE solver: b = ', b
@@ -167,12 +151,12 @@ program small_superlu
   endif
 
   ! do y = A*x (now x is soln , so y = b)
-  call f_pdgsmv(0_c_int64_t, A, grid, gsmv_comm_handle, x, y)
+  !call f_pdgsmv(0_c_int64_t, A, grid, gsmv_comm_handle, x, y)
 
   print *, 'rank', iam,  'pdgsmv AFTER solver, x = ', x
   print *, 'rank', iam,  'pdgsmv AFTER solver, b = ', b
   print *, 'rank', iam, 'pdgsmv AFTER solver, Ax = ', y
-  call f_pdgsmv_comm_destroy(gsmv_comm_handle)
+  !call f_pdgsmv_comm_destroy(gsmv_comm_handle)
 
 
   
