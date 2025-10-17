@@ -145,12 +145,11 @@ program small_superlu
   ! Now you can use pdgsmv multiple times
   call f_pdgsmv(0_c_int64_t, A, grid, gsmv_comm_handle, x, y)
 
-  print *, 'rank', iam, 'pdgsmv BEFORE solver'
-  print *, 'rank', iam,  'b = ', b
-  print *, 'rank', iam, 'Ab = ', y
+  print *, 'rank', iam,  'pdgsmv BEFORE solver: x = ', x
+  print *, 'rank', iam,  'pdgsmv BEFORE solver: b = ', b
+  print *, 'rank', iam, 'pdgsmv BEFORE solver: Ab = ', y
+
   !call f_pdgsmv_comm_destroy(gsmv_comm_handle)
-
-
   
   write(*,*) "calling pdgssvx"
 
@@ -170,9 +169,9 @@ program small_superlu
   ! do y = A*x (now x is soln , so y = b)
   call f_pdgsmv(0_c_int64_t, A, grid, gsmv_comm_handle, x, y)
 
-  print *, 'rank', iam, 'pdgsmv AFTER solver'
-  print *, 'rank', iam,  'b = ', b
-  print *, 'rank', iam, 'Ax = ', y
+  print *, 'rank', iam,  'pdgsmv AFTER solver, x = ', x
+  print *, 'rank', iam,  'pdgsmv AFTER solver, b = ', b
+  print *, 'rank', iam, 'pdgsmv AFTER solver, Ax = ', y
   call f_pdgsmv_comm_destroy(gsmv_comm_handle)
 
 
