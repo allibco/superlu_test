@@ -32,7 +32,7 @@ program small_superlu
   !integer(c_int64_t) :: gsmv_comm_handle
   !integer(c_int64_t) :: nnn = 4 !global size
 
-  type(halo_t) :: halo
+ type(halo_t) :: halo
 
   call MPI_Init(ierr)
   call MPI_Comm_rank(MPI_COMM_WORLD, iam, ierr)
