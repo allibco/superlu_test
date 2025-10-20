@@ -101,27 +101,25 @@ program small_superlu
 
 
 ! Print some metadata
-  print *, 'halo rank =', halo%rank
-  print *, 'nprocs_local =', halo%nprocs_local
-  print *, 'n_global =', halo%n_global
-  print *, 'm_loc =', halo%m_loc
-  print *, 'fst_row =', halo%fst_row, 'last_row =', halo%last_row
-  print *, 'nhalo =', halo%nhalo
+  print *, 'iam = ' iam, 'halo rank =', halo%rank
+  print *, 'iam = ' iam,'nprocs_local =', halo%nprocs_local
+  print *, 'iam = ' iam,'n_global =', halo%n_global
+  print *, 'iam = ' iam,'m_loc =', halo%m_loc
+  print *, 'iam = ' iam,'fst_row =', halo%fst_row, 'last_row =', halo%last_row
+  print *, 'iam = ' iam,'nhalo =', halo%nhalo
 
 ! Print integer arrays (halo columns and owners)
   if (halo%nhalo > 0) then
-     print *, 'halo_cols:'
-     print *, halo%halo_cols(1:halo%nhalo)
-     print *, 'owners:'
-     print *, halo%owners(1:halo%nhalo)
+     print *, 'iam = ' iam,  'halo_cols:', halo%halo_cols(1:halo%nhalo)
+     print *, 'iam = ' iam, 'owners:', halo%owners(1:halo%nhalo)
   end if
 
 ! Print send/receive counts
-  print *, 'sendcounts:', halo%sendcounts
-  print *, 'sdispls:', halo%sdispls
-  print *, 'recvcounts:', halo%recvcounts
-  print *, 'rdispls:', halo%rdispls
-  print *, 'recv_from:', halo%recv_from
+  print *, 'iam = ' iam,'sendcounts:', halo%sendcounts
+  print *, 'iam = ' iam,'sdispls:', halo%sdispls
+  print *, 'iam = ' iam,'recvcounts:', halo%recvcounts
+  print *, 'iam = ' iam,'rdispls:', halo%rdispls
+  print *, 'iam = ' iam,'recv_from:', halo%recv_from
 
 
   
