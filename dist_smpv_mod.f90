@@ -38,7 +38,7 @@ contains
     type(halo_t), intent(out) :: halo
     integer, intent(out) :: ierr
 
-    integer :: i, j, k, nn, rank, nprocs
+    integer :: i, j, k, nn, rank, nprocs, jp
     integer, allocatable :: tmp(:)
     integer :: owner
     integer :: rows_per_proc_num, rows_per_proc_den
@@ -61,14 +61,16 @@ contains
     nn = 0
     do i = 1, m_loc
        do j = rowptr(i), rowptr(i+1)-1
-          if (colind(j) < fst_row .or. colind(j) > last_row) then
+          !add one to j since row_ptr is 0-based
+          jp = j+1
+          if (colind(jp) < fst_row .or. colind(jp) > last_row) then
              nn = nn + 1
              if (size(tmp) == 0) then
                 deallocate(tmp)
                 allocate(tmp(1))
-                tmp(1) = colind(j)
+                tmp(1) = colind(jp)
              else
-                tmp = [tmp, colind(j)]
+                tmp = [tmp, colind(jp)]
              end if
           end if
        end do
