@@ -160,207 +160,206 @@ contains
   !   Output:
   !      y_local(1:m_loc)
   !----------------------------------------------------------------------
-#if 0
-  subroutine dist_spmv(rowptr, colind, nzval, x_local, y_local, halo, comm, ierr)
-    integer(c_int), intent(in) :: rowptr(0:), colind(:)
-    real(c_double), intent(in) :: nzval(:)
-    real(c_double), intent(in) :: x_local(:)
-    real(c_double), intent(out) :: y_local(:)
-    type(halo_t), intent(in) :: halo
-    integer, intent(in), optional :: comm
-    integer, intent(out) :: ierr
 
-    integer :: use_comm
-    integer :: i, j, k, p, idx, owner, pos
-    integer :: m_loc
-    integer :: nprocs
-    integer, parameter :: dp_kind = c_double
-    integer :: reqs_count, total_reqs
-    integer, allocatable :: reqs(:)
-    integer, allocatable :: stats(:)
-    real(c_double), allocatable :: sendbuf(:), recvbuf(:)
-    integer :: sdis, rdis
-    integer :: nnei
-
-    ierr = 0
-    if (present(comm)) then
-       use_comm = comm
-    else
-       use_comm = MPI_COMM_WORLD
-    end if
-
-    m_loc = halo%m_loc
-    nprocs = halo%nprocs_local
-
-    ! Zero output
-    y_local = 0.0d0
-
-    ! If no halo, simple local SpMV
-    if (halo%nhalo == 0) then
-       do i = 1, m_loc
-          do j = rowptr(i-1), rowptr(i)-1
-             y_local(i) = y_local(i) + nzval(j) * x_local( colind(j) - halo%fst_row + 1 )
-          end do
-       end do
-       return
-    end if
-
-    ! Build send buffer: extract x values for halo_cols, packed in send_order
-    allocate(sendbuf(halo%nhalo))
-    do p = 1, halo%nhalo
-       idx = halo%send_order(p)            ! idx indexes halo%halo_cols
-       sendbuf(p) = x_value_for_global( halo%halo_cols(idx), x_local, halo )
-    end do
-
-    ! Allocate recv buffer sized total recv entries
-    allocate(recvbuf( halo%rdispls(nprocs) + halo%recvcounts(nprocs) ))
-    ! Post Irecv from each src rank where recvcounts>0
-    nnei = size(halo%recv_from)
-    total_reqs = nnei + count(halo%sendcounts > 0)
-    allocate(reqs(total_reqs))
-    allocate(stats(MPI_STATUS_SIZE * total_reqs))
-    reqs_count = 0
-
-    ! Irecv
-    do k = 1, size(halo%recv_from)
-       owner = halo%recv_from(k)
-       rdis = halo%rdispls(owner+1)
-       call MPI_Irecv(recvbuf(rdis+1), halo%recvcounts(owner+1), MPI_DOUBLE_PRECISION, owner, &
-                      12345, use_comm, reqs(reqs_count+1), ierr)
-       reqs_count = reqs_count + 1
-    end do
-
-    ! Isend
-    do owner = 0, nprocs-1
-       if (halo%sendcounts(owner+1) > 0) then
-          sdis = halo%sdispls(owner+1)
-          call MPI_Isend(sendbuf(sdis+1), halo%sendcounts(owner+1), MPI_DOUBLE_PRECISION, owner, &
-                         12345, use_comm, reqs(reqs_count+1), ierr)
-          reqs_count = reqs_count + 1
-       end if
-    end do
-
-    ! Waitall
-    if (reqs_count > 0) then
-       call MPI_Waitall(reqs_count, reqs, stats, ierr)
-    end if
-
-    ! Now we have received remote x packed: recvbuf(rdis+1 : rdis+recvcounts)
-    ! Build a small map from halo global column -> value (simple linear search; halo sizes usually small)
-    ! We'll place recv values into an array 'halo_values' in same order as halo%halo_cols.
-    real(c_double), allocatable :: halo_values(:)
-    allocate(halo_values(halo%nhalo))
-    halo_values = 0.0d0
-
-    ! For each source owner, their contributions fill a contiguous range in recvbuf with length recvcounts(owner)
-    ! We need to know which global columns these correspond to:
-    ! When sending, other ranks will have used same scheme to compute send_order, so recv ordering
-    ! corresponds to THEIR send_order for destination=me. But because both sides used Alltoall to compute counts,
-    ! the ordering is consistent if both sides used the same packing (they do). However we didn't compute the remote ordering here.
-    !
-    ! To avoid complicated remote ordering logic, we will assume symmetric partitioning (most common):
-    !   - when rank R sends K entries to me, it sends them in the same relative order as my halo_cols that I own on R's side.
-    ! But in general to be robust across arbitrary patterns you would exchange index lists too. For simplicity here,
-    ! we'll assume both sides used the same deterministic packing algorithm (Alltoall of counts + our send_order), which is true.
-    !
-    ! For correct mapping, we need to reconstruct the mapping: for each owner O, the entries I receive from O correspond to
-    ! those halo_cols whose owner == O, and in the same order as they appear in halo%send_order for owner O.
-    !
-    ! Fill halo_values accordingly:
-
-    do owner = 0, nprocs-1
-       if (halo%sendcounts(owner+1) > 0) then
-          ! entries that this rank would have sent to 'owner' are at send_order( sdis+1 : sdis+sendcounts )
-          sdis = halo%sdispls(owner+1)
-          do p = 1, halo%sendcounts(owner+1)
-             pos = halo%send_order(sdis + p)
-             ! find position of this pos in halo%owners == ?  (we know owners(pos) == owner)
-             ! the corresponding received value from owner appears in recvbuf at rdis + offset
-             ! offset is the index among recvbuf for incoming from 'owner' where this rank is the destination.
-             ! That offset equals the index within recv for owner where rank==halo%rank; But to avoid two-way mapping complexity,
-             ! use this approach: the recv ordering for data from owner is exactly the subsequence of halo%halo_cols whose owners==halo%rank,
-             ! which we can produce by scanning halo%halo_cols. Simpler: reconstruct mapping by scanning halo%halo_cols and matching owners.
-          end do
-       end if
-    end do
-
-    ! Simpler robust approach: iterate over halo%halo_cols in order 1..nhalo;
-    ! for each halo_col k, find its owner o = owners(k).
-    ! Keep a per-owner pointer 'rcur(o)' initially rdispls(o)+1; when owner==o, assign halo_values(k) = recvbuf(rcur(o)); rcur(o)=rcur(o)+1
-    integer, allocatable :: rcur(:)
-    allocate(rcur(nprocs))
-    do owner = 0, nprocs-1
-       rcur(owner+1) = halo%rdispls(owner+1) + 1
-    end do
-
-    do k = 1, halo%nhalo
-       owner = halo%owners(k)
-       if (halo%recvcounts(owner+1) > 0) then
-          halo_values(k) = recvbuf( rcur(owner+1) )
-          rcur(owner+1) = rcur(owner+1) + 1
-       else
-          ! If recvcount==0 then this halo col was actually local to us (rare due to rounding)
-          halo_values(k) = x_value_for_global( halo%halo_cols(k), x_local, halo )
-       end if
-    end do
-
-    ! Finally do local SpMV using halo_values when needed
-    do i = 1, m_loc
-       do j = rowptr(i-1), rowptr(i)-1
-          if (colind(j) >= halo%fst_row .and. colind(j) <= halo%last_row) then
-             y_local(i) = y_local(i) + nzval(j) * x_local( colind(j) - halo%fst_row + 1 )
-          else
-             ! find index into halo_cols
-             ! linear search; can be replaced with hash if halo large
-             do k = 1, halo%nhalo
-                if (halo%halo_cols(k) == colind(j)) then
-                   y_local(i) = y_local(i) + nzval(j) * halo_values(k)
-                   exit
-                end if
-             end do
-          end if
-       end do
-    end do
-
-    ! cleanup temporaries
-    deallocate(sendbuf, recvbuf, reqs, stats, halo_values, rcur)
-
-  end subroutine dist_spmv
+!!$  subroutine dist_spmv(rowptr, colind, nzval, x_local, y_local, halo, comm, ierr)
+!!$    integer(c_int), intent(in) :: rowptr(0:), colind(:)
+!!$    real(c_double), intent(in) :: nzval(:)
+!!$    real(c_double), intent(in) :: x_local(:)
+!!$    real(c_double), intent(out) :: y_local(:)
+!!$    type(halo_t), intent(in) :: halo
+!!$    integer, intent(in), optional :: comm
+!!$    integer, intent(out) :: ierr
+!!$
+!!$    integer :: use_comm
+!!$    integer :: i, j, k, p, idx, owner, pos
+!!$    integer :: m_loc
+!!$    integer :: nprocs
+!!$    integer, parameter :: dp_kind = c_double
+!!$    integer :: reqs_count, total_reqs
+!!$    integer, allocatable :: reqs(:)
+!!$    integer, allocatable :: stats(:)
+!!$    real(c_double), allocatable :: sendbuf(:), recvbuf(:)
+!!$    integer :: sdis, rdis
+!!$    integer :: nnei
+!!$
+!!$    ierr = 0
+!!$    if (present(comm)) then
+!!$       use_comm = comm
+!!$    else
+!!$       use_comm = MPI_COMM_WORLD
+!!$    end if
+!!$
+!!$    m_loc = halo%m_loc
+!!$    nprocs = halo%nprocs_local
+!!$
+!!$    ! Zero output
+!!$    y_local = 0.0d0
+!!$
+!!$    ! If no halo, simple local SpMV
+!!$    if (halo%nhalo == 0) then
+!!$       do i = 1, m_loc
+!!$          do j = rowptr(i-1), rowptr(i)-1
+!!$             y_local(i) = y_local(i) + nzval(j) * x_local( colind(j) - halo%fst_row + 1 )
+!!$          end do
+!!$       end do
+!!$       return
+!!$    end if
+!!$
+!!$    ! Build send buffer: extract x values for halo_cols, packed in send_order
+!!$    allocate(sendbuf(halo%nhalo))
+!!$    do p = 1, halo%nhalo
+!!$       idx = halo%send_order(p)            ! idx indexes halo%halo_cols
+!!$       sendbuf(p) = x_value_for_global( halo%halo_cols(idx), x_local, halo )
+!!$    end do
+!!$
+!!$    ! Allocate recv buffer sized total recv entries
+!!$    allocate(recvbuf( halo%rdispls(nprocs) + halo%recvcounts(nprocs) ))
+!!$    ! Post Irecv from each src rank where recvcounts>0
+!!$    nnei = size(halo%recv_from)
+!!$    total_reqs = nnei + count(halo%sendcounts > 0)
+!!$    allocate(reqs(total_reqs))
+!!$    allocate(stats(MPI_STATUS_SIZE * total_reqs))
+!!$    reqs_count = 0
+!!$
+!!$    ! Irecv
+!!$    do k = 1, size(halo%recv_from)
+!!$       owner = halo%recv_from(k)
+!!$       rdis = halo%rdispls(owner+1)
+!!$       call MPI_Irecv(recvbuf(rdis+1), halo%recvcounts(owner+1), MPI_DOUBLE_PRECISION, owner, &
+!!$                      12345, use_comm, reqs(reqs_count+1), ierr)
+!!$       reqs_count = reqs_count + 1
+!!$    end do
+!!$
+!!$    ! Isend
+!!$    do owner = 0, nprocs-1
+!!$       if (halo%sendcounts(owner+1) > 0) then
+!!$          sdis = halo%sdispls(owner+1)
+!!$          call MPI_Isend(sendbuf(sdis+1), halo%sendcounts(owner+1), MPI_DOUBLE_PRECISION, owner, &
+!!$                         12345, use_comm, reqs(reqs_count+1), ierr)
+!!$          reqs_count = reqs_count + 1
+!!$       end if
+!!$    end do
+!!$
+!!$    ! Waitall
+!!$    if (reqs_count > 0) then
+!!$       call MPI_Waitall(reqs_count, reqs, stats, ierr)
+!!$    end if
+!!$
+!!$    ! Now we have received remote x packed: recvbuf(rdis+1 : rdis+recvcounts)
+!!$    ! Build a small map from halo global column -> value (simple linear search; halo sizes usually small)
+!!$    ! We'll place recv values into an array 'halo_values' in same order as halo%halo_cols.
+!!$    real(c_double), allocatable :: halo_values(:)
+!!$    allocate(halo_values(halo%nhalo))
+!!$    halo_values = 0.0d0
+!!$
+!!$    ! For each source owner, their contributions fill a contiguous range in recvbuf with length recvcounts(owner)
+!!$    ! We need to know which global columns these correspond to:
+!!$    ! When sending, other ranks will have used same scheme to compute send_order, so recv ordering
+!!$    ! corresponds to THEIR send_order for destination=me. But because both sides used Alltoall to compute counts,
+!!$    ! the ordering is consistent if both sides used the same packing (they do). However we didn't compute the remote ordering here.
+!!$    !
+!!$    ! To avoid complicated remote ordering logic, we will assume symmetric partitioning (most common):
+!!$    !   - when rank R sends K entries to me, it sends them in the same relative order as my halo_cols that I own on R's side.
+!!$    ! But in general to be robust across arbitrary patterns you would exchange index lists too. For simplicity here,
+!!$    ! we'll assume both sides used the same deterministic packing algorithm (Alltoall of counts + our send_order), which is true.
+!!$    !
+!!$    ! For correct mapping, we need to reconstruct the mapping: for each owner O, the entries I receive from O correspond to
+!!$    ! those halo_cols whose owner == O, and in the same order as they appear in halo%send_order for owner O.
+!!$    !
+!!$    ! Fill halo_values accordingly:
+!!$
+!!$    do owner = 0, nprocs-1
+!!$       if (halo%sendcounts(owner+1) > 0) then
+!!$          ! entries that this rank would have sent to 'owner' are at send_order( sdis+1 : sdis+sendcounts )
+!!$          sdis = halo%sdispls(owner+1)
+!!$          do p = 1, halo%sendcounts(owner+1)
+!!$             pos = halo%send_order(sdis + p)
+!!$             ! find position of this pos in halo%owners == ?  (we know owners(pos) == owner)
+!!$             ! the corresponding received value from owner appears in recvbuf at rdis + offset
+!!$             ! offset is the index among recvbuf for incoming from 'owner' where this rank is the destination.
+!!$             ! That offset equals the index within recv for owner where rank==halo%rank; But to avoid two-way mapping complexity,
+!!$             ! use this approach: the recv ordering for data from owner is exactly the subsequence of halo%halo_cols whose owners==halo%rank,
+!!$             ! which we can produce by scanning halo%halo_cols. Simpler: reconstruct mapping by scanning halo%halo_cols and matching owners.
+!!$          end do
+!!$       end if
+!!$    end do
+!!$
+!!$    ! Simpler robust approach: iterate over halo%halo_cols in order 1..nhalo;
+!!$    ! for each halo_col k, find its owner o = owners(k).
+!!$    ! Keep a per-owner pointer 'rcur(o)' initially rdispls(o)+1; when owner==o, assign halo_values(k) = recvbuf(rcur(o)); rcur(o)=rcur(o)+1
+!!$    integer, allocatable :: rcur(:)
+!!$    allocate(rcur(nprocs))
+!!$    do owner = 0, nprocs-1
+!!$       rcur(owner+1) = halo%rdispls(owner+1) + 1
+!!$    end do
+!!$
+!!$    do k = 1, halo%nhalo
+!!$       owner = halo%owners(k)
+!!$       if (halo%recvcounts(owner+1) > 0) then
+!!$          halo_values(k) = recvbuf( rcur(owner+1) )
+!!$          rcur(owner+1) = rcur(owner+1) + 1
+!!$       else
+!!$          ! If recvcount==0 then this halo col was actually local to us (rare due to rounding)
+!!$          halo_values(k) = x_value_for_global( halo%halo_cols(k), x_local, halo )
+!!$       end if
+!!$    end do
+!!$
+!!$    ! Finally do local SpMV using halo_values when needed
+!!$    do i = 1, m_loc
+!!$       do j = rowptr(i-1), rowptr(i)-1
+!!$          if (colind(j) >= halo%fst_row .and. colind(j) <= halo%last_row) then
+!!$             y_local(i) = y_local(i) + nzval(j) * x_local( colind(j) - halo%fst_row + 1 )
+!!$          else
+!!$             ! find index into halo_cols
+!!$             ! linear search; can be replaced with hash if halo large
+!!$             do k = 1, halo%nhalo
+!!$                if (halo%halo_cols(k) == colind(j)) then
+!!$                   y_local(i) = y_local(i) + nzval(j) * halo_values(k)
+!!$                   exit
+!!$                end if
+!!$             end do
+!!$          end if
+!!$       end do
+!!$    end do
+!!$
+!!$    ! cleanup temporaries
+!!$    deallocate(sendbuf, recvbuf, reqs, stats, halo_values, rcur)
+!!$
+!!$  end subroutine dist_spmv
 
   
   !----------------------------------------------------------------------
   ! dist_spmv_free - free arrays inside halo
   !----------------------------------------------------------------------
 
-  subroutine dist_spmv_free(halo)
-    type(halo_t), intent(inout) :: halo
-    if (allocated(halo%halo_cols)) deallocate(halo%halo_cols)
-    if (allocated(halo%owners)) deallocate(halo%owners)
-    if (allocated(halo%sendcounts)) deallocate(halo%sendcounts)
-    if (allocated(halo%sdispls)) deallocate(halo%sdispls)
-    if (allocated(halo%recvcounts)) deallocate(halo%recvcounts)
-    if (allocated(halo%rdispls)) deallocate(halo%rdispls)
-    if (allocated(halo%send_order)) deallocate(halo%send_order)
-    if (allocated(halo%recv_from)) deallocate(halo%recv_from)
-  end subroutine dist_spmv_free
+!!$  subroutine dist_spmv_free(halo)
+!!$    type(halo_t), intent(inout) :: halo
+!!$    if (allocated(halo%halo_cols)) deallocate(halo%halo_cols)
+!!$    if (allocated(halo%owners)) deallocate(halo%owners)
+!!$    if (allocated(halo%sendcounts)) deallocate(halo%sendcounts)
+!!$    if (allocated(halo%sdispls)) deallocate(halo%sdispls)
+!!$    if (allocated(halo%recvcounts)) deallocate(halo%recvcounts)
+!!$    if (allocated(halo%rdispls)) deallocate(halo%rdispls)
+!!$    if (allocated(halo%send_order)) deallocate(halo%send_order)
+!!$    if (allocated(halo%recv_from)) deallocate(halo%recv_from)
+!!$  end subroutine dist_spmv_free
 
   !----------------------------------------------------------------------
   ! Helper: return x value for a global index using local x_local if owned
   !----------------------------------------------------------------------
 
-  elemental function x_value_for_global(gidx, x_local, halo) result(val)
-    integer(c_int), intent(in) :: gidx
-    real(c_double), intent(in) :: x_local(:)
-    type(halo_t), intent(in) :: halo
-    real(c_double) :: val
-    if (gidx >= halo%fst_row .and. gidx <= halo%last_row) then
-       val = x_local( gidx - halo%fst_row + 1 )
-    else
-       val = 0.0d0   ! placeholder; actual remote values filled from recvbuf
-    end if
-  end function x_value_for_global
-#endif
-  
+!!$  elemental function x_value_for_global(gidx, x_local, halo) result(val)
+!!$    integer(c_int), intent(in) :: gidx
+!!$    real(c_double), intent(in) :: x_local(:)
+!!$    type(halo_t), intent(in) :: halo
+!!$    real(c_double) :: val
+!!$    if (gidx >= halo%fst_row .and. gidx <= halo%last_row) then
+!!$       val = x_local( gidx - halo%fst_row + 1 )
+!!$    else
+!!$       val = 0.0d0   ! placeholder; actual remote values filled from recvbuf
+!!$    end if
+!!$  end function x_value_for_global
+!!$  
   !----------------------------------------------------------------------
   ! small utility: unique_sort_int 
   !----------------------------------------------------------------------
