@@ -63,8 +63,8 @@ contains
        do j = rowptr(i), rowptr(i+1)-1
           !add one to j since row_ptr is 0-based
           jp = j+1
-          if (colind(jp) < fst_row .or. colind(jp) > last_row) then
-             nn = nn + 1
+          if (colind(jp) < fst_row .or. colind(jp) > last_row ) then !i don't own
+             nn = nn + 1 !increase halp
              if (size(tmp) == 0) then
                 deallocate(tmp)
                 allocate(tmp(1))
@@ -87,7 +87,7 @@ contains
        return
     end if
 
-    ! 2) Make unique and sort (simple O(n^2) unique - fine for moderate halo sizes)
+    ! 2) Make unique and sort 
     call unique_sort_int(tmp, nn)
 
     halo%nhalo = nn
@@ -104,7 +104,7 @@ contains
     rank = 0 ! first rank
     ! Advance to the correct rank if halo_cols(k) has crossed next boundary
     do k = 1, halo%nhalo
-       do while (rank < halo%nprocs_local -1 .and. halo%halo_cols(k) >= task_row_starts(rank+1))
+       do while (rank < halo%nprocs_local -1 .and. halo%halo_cols(k) >= task_row_starts(rank+2))
           rank = rank + 1
        end do
        halo%owners(k) = rank !0-based owner
