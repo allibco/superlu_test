@@ -195,7 +195,7 @@ program small_superlu
   
   deallocate(rowptr)
   deallocate(colind, nzval)
-  deallocate(b, x, y, berr, row_to_proc)
+  deallocate(b, x, y, berr)
 
   call MPI_Finalize(ierr)
 
