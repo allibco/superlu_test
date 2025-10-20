@@ -4,7 +4,7 @@ module dist_spmv_mod
   implicit none
   private
   public :: dist_spmv_init
-  public :: dist_spmv, dist_spmv_free
+  !public :: dist_spmv, dist_spmv_free
 
   type halo_t
      integer :: nprocs_local      ! communicator size
@@ -378,7 +378,7 @@ contains
   end subroutine unique_sort_int
 
 
-  subroutine quicksort_int(a, left, right)
+  recursive subroutine quicksort_int(a, left, right)
     implicit none
     integer, intent(inout) :: a(:)
     integer, intent(in) :: left, right
