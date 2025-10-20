@@ -3,7 +3,8 @@ module dist_spmv_mod
   use mpi
   implicit none
   private
-  public :: dist_spmv_init, dist_spmv, dist_spmv_free
+  public :: dist_spmv_init
+  public :: dist_spmv, dist_spmv_free
 
   type halo_t
      integer :: nprocs_local      ! communicator size
@@ -102,7 +103,7 @@ contains
     rank = 0 ! first rank
     ! Advance to the correct rank if halo_cols(k) has crossed next boundary
     do k = 1, halo%nhalo
-       do while (rank < halo%nprocs_local -1 .and. halo%halo_cols(k) >= task_row_starts(rank+1)
+       do while (rank < halo%nprocs_local -1 .and. halo%halo_cols(k) >= task_row_starts(rank+1))
           rank = rank + 1
        end do
        halo%owners(k) = rank !0-based owner
@@ -159,7 +160,7 @@ contains
   !   Output:
   !      y_local(1:m_loc)
   !----------------------------------------------------------------------
-
+#if 0
   subroutine dist_spmv(rowptr, colind, nzval, x_local, y_local, halo, comm, ierr)
     integer(c_int), intent(in) :: rowptr(0:), colind(:)
     real(c_double), intent(in) :: nzval(:)
@@ -326,6 +327,7 @@ contains
 
   end subroutine dist_spmv
 
+  
   !----------------------------------------------------------------------
   ! dist_spmv_free - free arrays inside halo
   !----------------------------------------------------------------------
@@ -357,7 +359,8 @@ contains
        val = 0.0d0   ! placeholder; actual remote values filled from recvbuf
     end if
   end function x_value_for_global
-
+#endif
+  
   !----------------------------------------------------------------------
   ! small utility: unique_sort_int 
   !----------------------------------------------------------------------
