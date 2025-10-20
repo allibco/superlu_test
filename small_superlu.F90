@@ -3,6 +3,7 @@ program small_superlu
   #include "superlu_dist_config.fh"
   use superlu_mod
   use superlu_bindings
+  use dist_spmv_mod
   use iso_c_binding
   use mpi
   
@@ -15,7 +16,7 @@ program small_superlu
   integer :: nnz_loc
   !integer(kind=c_int), allocatable :: rowptr(:), colind(:)
   real(kind=c_double), allocatable :: nzval(:), b(:), berr(:), y(:), x(:)
-  integer, allocatable :: rowptr(:), colind(:)
+  integer, allocatable :: rowptr(:), colind(:), task_row_starts(:)
   integer, allocatable, target:: row_to_proc(:)
 
   
@@ -27,11 +28,11 @@ program small_superlu
   integer(c_int64_t) :: LUstruct
   integer(c_int64_t) :: SOLVEstruct
   integer(c_int64_t) :: stat
-   integer(c_int64_t) :: row_to_proc_handle
-  integer(c_int64_t) :: gsmv_comm_handle
+  !integer(c_int64_t) :: row_to_proc_handle
+  !integer(c_int64_t) :: gsmv_comm_handle
+  !integer(c_int64_t) :: nnn = 4 !global size
 
-  integer(c_int64_t) :: nnn = 4 !global size
-
+  type(halo_t) :: halo
 
   call MPI_Init(ierr)
   call MPI_Comm_rank(MPI_COMM_WORLD, iam, ierr)
@@ -47,7 +48,7 @@ program small_superlu
   call f_create_SuperMatrix_handle(A)
   call f_create_SuperLUStat_handle(stat)
 
-  gsmv_comm_handle = f_pdgsmv_comm_create()
+  !gsmv_comm_handle = f_pdgsmv_comm_create()
 
   !print *, 'rank', iam, 'handles: A=', A, 'grid=', grid, 'options=', options
 
@@ -89,10 +90,14 @@ program small_superlu
      b = [7.0d0, 8.0d0]
   end if
 
-  allocate(row_to_proc(n))
-  row_to_proc=[ 0, 0, 1, 1]
-  row_to_proc_handle = transfer(c_loc(row_to_proc), row_to_proc_handle)
+  allocate(task_row_starts(3))
+  task_row_starts=[0 2 4];
+  
+  !allocate(row_to_proc(n))
+  !row_to_proc=[ 0, 0, 1, 1]
+  !row_to_proc_handle = transfer(c_loc(row_to_proc), row_to_proc_handle)
 
+  call dist_spmv_init(m_loc, fst_row, n, nprocs, iam, rowptr, colind, task_row_starts, comm, halo, ierr)
   
   print *, "Rank", iam, "m_loc=", m_loc, "nnz_loc=", nnz_loc, "fst_row=", fst_row
 
@@ -124,16 +129,16 @@ program small_superlu
   ! Allocate the communication structure
 
   ! Initialize pdgsmv communication
-  call f_pdgsmv_init(A, row_to_proc_handle, grid, gsmv_comm_handle)
+  !call f_pdgsmv_init(A, row_to_proc_handle, grid, gsmv_comm_handle)
 
   ! Now you can use pdgsmv multiple times
-  call f_pdgsmv(0_c_int64_t, A, grid, gsmv_comm_handle, x, y)
+  !call f_pdgsmv(0_c_int64_t, A, grid, gsmv_comm_handle, x, y)
 
-  print *, 'rank', iam,  'pdgsmv BEFORE solver: x = ', x
-  print *, 'rank', iam,  'pdgsmv BEFORE solver: b = ', b
-  print *, 'rank', iam, 'pdgsmv BEFORE solver: Ab = ', y
+  !print *, 'rank', iam,  'pdgsmv BEFORE solver: x = ', x
+  !print *, 'rank', iam,  'pdgsmv BEFORE solver: b = ', b
+  !print *, 'rank', iam, 'pdgsmv BEFORE solver: Ab = ', y
 
-  call f_pdgsmv_comm_destroy(gsmv_comm_handle)
+  !call f_pdgsmv_comm_destroy(gsmv_comm_handle)
   
   write(*,*) "calling pdgssvx"
 
@@ -155,9 +160,9 @@ program small_superlu
 
   !call f_pdgsmv(0_c_int64_t, A, grid, gsmv_comm_handle, x, y)
 
-  print *, 'rank', iam,  'pdgsmv AFTER solver, x = ', x
-  print *, 'rank', iam,  'pdgsmv AFTER solver, b = ', b
-  print *, 'rank', iam, 'pdgsmv AFTER solver, Ax = ', y
+  !print *, 'rank', iam,  'pdgsmv AFTER solver, x = ', x
+  !print *, 'rank', iam,  'pdgsmv AFTER solver, b = ', b
+  !print *, 'rank', iam, 'pdgsmv AFTER solver, Ax = ', y
   !call f_pdgsmv_comm_destroy(gsmv_comm_handle)
 
 
