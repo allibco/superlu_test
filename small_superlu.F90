@@ -97,7 +97,7 @@ program small_superlu
   !row_to_proc=[ 0, 0, 1, 1]
   !row_to_proc_handle = transfer(c_loc(row_to_proc), row_to_proc_handle)
 
-  call dist_spmv_init(m_loc, fst_row, n, nprocs, iam, rowptr, colind, task_row_starts, comm, halo, ierr)
+  call dist_spmv_init(m_loc, fst_row, n, nprocs, iam, rowptr, colind, task_row_starts, MPI_COMM_WORLD, halo, ierr)
   
   print *, "Rank", iam, "m_loc=", m_loc, "nnz_loc=", nnz_loc, "fst_row=", fst_row
 
