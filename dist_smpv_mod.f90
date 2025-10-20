@@ -2,8 +2,7 @@ module dist_spmv_mod
   use iso_c_binding, only: c_int, c_double
   use mpi
   implicit none
-  private
-  public :: dist_spmv_init
+   !public :: dist_spmv_init
   !public :: dist_spmv, dist_spmv_free
 
   type halo_t

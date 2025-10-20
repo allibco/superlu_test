@@ -91,7 +91,7 @@ program small_superlu
   end if
 
   allocate(task_row_starts(3))
-  task_row_starts=[0 2 4];
+  task_row_starts=[0, 2, 4];
   
   !allocate(row_to_proc(n))
   !row_to_proc=[ 0, 0, 1, 1]
