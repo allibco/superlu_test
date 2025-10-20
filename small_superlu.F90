@@ -98,8 +98,34 @@ program small_superlu
   !row_to_proc_handle = transfer(c_loc(row_to_proc), row_to_proc_handle)
 
   call dist_spmv_init(m_loc, fst_row, n, nprocs, iam, rowptr, colind, task_row_starts, MPI_COMM_WORLD, halo, ierr)
+
+
+! Print some metadata
+  print *, 'halo rank =', halo%rank
+  print *, 'nprocs_local =', halo%nprocs_local
+  print *, 'n_global =', halo%n_global
+  print *, 'm_loc =', halo%m_loc
+  print *, 'fst_row =', halo%fst_row, 'last_row =', halo%last_row
+  print *, 'nhalo =', halo%nhalo
+
+! Print integer arrays (halo columns and owners)
+  if (halo%nhalo > 0) then
+     print *, 'halo_cols:'
+     print *, halo%halo_cols(1:halo%nhalo)
+     print *, 'owners:'
+     print *, halo%owners(1:halo%nhalo)
+  end if
+
+! Print send/receive counts
+  print *, 'sendcounts:', halo%sendcounts
+  print *, 'sdispls:', halo%sdispls
+  print *, 'recvcounts:', halo%recvcounts
+  print *, 'rdispls:', halo%rdispls
+  print *, 'recv_from:', halo%recv_from
+
+
   
-  print *, "Rank", iam, "m_loc=", m_loc, "nnz_loc=", nnz_loc, "fst_row=", fst_row
+  !print *, "Rank", iam, "m_loc=", m_loc, "nnz_loc=", nnz_loc, "fst_row=", fst_row
 
   
   ! Create the distributed compressed row matrix pointed to by the F90 handle A
