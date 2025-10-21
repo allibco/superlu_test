@@ -123,16 +123,16 @@ contains
     allocate(halo%sendcounts(halo%nprocs_local))
     halo%sendcounts = 0
 
-    print *, 'D1: iam = ', iam,'sendcounts:', halo%sendcounts
-    print *, 'D1: iam = ', iam,'recvcounts:', halo%recvcounts
+    print *, 'D1: iam = ', myrank,'sendcounts:', halo%sendcounts
+    print *, 'D1: iam = ', myrank,'recvcounts:', halo%recvcounts
 
     
     call MPI_Alltoall(halo%recvcounts, 1, MPI_INTEGER, halo%sendcounts, 1, MPI_INTEGER, comm, ierr)
     !recvcounts is how many i need to recv from each proc
     !sendcounts is how many i need to send to each
 
-    print *, 'D2: iam = ', iam,'sendcounts:', halo%sendcounts
-    print *, 'D2: iam = ', iam,'recvcounts:', halo%recvcounts
+    print *, 'D2: iam = ', myrank,'sendcounts:', halo%sendcounts
+    print *, 'D2: iam = ', myrank,'recvcounts:', halo%recvcounts
 
     
     ! 4) Compute displacements for data to recv (indexes into halo_cols)
