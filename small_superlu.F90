@@ -107,6 +107,7 @@ program small_superlu
   print *, 'iam = ', iam,'m_loc =', halo%m_loc
   print *, 'iam = ', iam,'fst_row =', halo%fst_row, 'last_row =', halo%last_row
   print *, 'iam = ', iam,'nhalo =', halo%nhalo
+  print *, 'iam = ', iam,'nhalo =', halo%nhalo_send
 
 ! Print integer arrays (halo columns and owners)
   if (halo%nhalo > 0) then
