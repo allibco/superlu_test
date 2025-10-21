@@ -97,32 +97,40 @@ program small_superlu
   !row_to_proc=[ 0, 0, 1, 1]
   !row_to_proc_handle = transfer(c_loc(row_to_proc), row_to_proc_handle)
 
-!!$  call dist_spmv_init(m_loc, fst_row, n, nprocs, iam, rowptr, colind, task_row_starts, MPI_COMM_WORLD, halo, ierr)
-!!$
-!!$
-!!$! Print some metadata
-!!$  print *, 'iam = ', iam, 'halo rank =', halo%rank
-!!$  print *, 'iam = ', iam,'nprocs_local =', halo%nprocs_local
-!!$  print *, 'iam = ', iam,'n_global =', halo%n_global
-!!$  print *, 'iam = ', iam,'m_loc =', halo%m_loc
-!!$  print *, 'iam = ', iam,'fst_row =', halo%fst_row, 'last_row =', halo%last_row
-!!$  print *, 'iam = ', iam,'nhalo =', halo%nhalo
-!!$
-!!$! Print integer arrays (halo columns and owners)
-!!$  if (halo%nhalo > 0) then
-!!$     print *, 'iam = ', iam,  'halo_cols:', halo%halo_cols(1:halo%nhalo)
-!!$     print *, 'iam = ', iam, 'owners:', halo%col_owners(1:halo%nhalo)
-!!$  end if
-!!$
-!!$! Print send/receive counts
-!!$  print *, 'iam = ', iam,'sendcounts:', halo%sendcounts
-!!$  print *, 'iam = ', iam,'sdispls:', halo%sdispls
-!!$  print *, 'iam = ', iam,'recvcounts:', halo%recvcounts
-!!$  print *, 'iam = ', iam,'rdispls:', halo%rdispls
-!!$  print *, 'iam = ', iam,'recv_from:', halo%recv_from
-!!$
-!!$  
-  !print *, "Rank", iam, "m_loc=", m_loc, "nnz_loc=", nnz_loc, "fst_row=", fst_row
+  call dist_spmv_init(m_loc, fst_row, n, nprocs, iam, rowptr, colind, task_row_starts, MPI_COMM_WORLD, halo, ierr)
+
+
+! Print some metadata
+  print *, 'iam = ', iam, 'halo rank =', halo%rank
+  print *, 'iam = ', iam,'nprocs_local =', halo%nprocs_local
+  print *, 'iam = ', iam,'n_global =', halo%n_global
+  print *, 'iam = ', iam,'m_loc =', halo%m_loc
+  print *, 'iam = ', iam,'fst_row =', halo%fst_row, 'last_row =', halo%last_row
+  print *, 'iam = ', iam,'nhalo =', halo%nhalo
+
+! Print integer arrays (halo columns and owners)
+  if (halo%nhalo > 0) then
+     print *, 'iam = ', iam,  'halo_cols:', halo%halo_cols(1:halo%nhalo)
+     print *, 'iam = ', iam, 'col_owners:', halo%col_owners(1:halo%nhalo)
+  end if
+
+  if (halo%nhalo_send > 0) then
+     print *, 'iam = ', iam,  'send_cols:', halo%halo_cols(1:halo%nhalo)
+     print *, 'iam = ', iam, 'send_to:', halo%col_owners(1:halo%nhalo)
+  end if
+
+
+  
+! Print send/receive counts
+  print *, 'iam = ', iam,'sendcounts:', halo%sendcounts
+  print *, 'iam = ', iam,'sdispls:', halo%sdispls
+  print *, 'iam = ', iam,'recvcounts:', halo%recvcounts
+  print *, 'iam = ', iam,'rdispls:', halo%rdispls
+  print *, 'iam = ', iam,'recv_from:', halo%recv_from
+  print *, 'iam = ', iam,'send_to:', halo%send_to
+
+  
+!!$  !print *, "Rank", iam, "m_loc=", m_loc, "nnz_loc=", nnz_loc, "fst_row=", fst_row
 
   
   ! Create the distributed compressed row matrix pointed to by the F90 handle A

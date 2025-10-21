@@ -201,7 +201,7 @@ contains
 
     
     ! Clean up FINISH
-    deallocate(tmp, stats)
+    deallocate(tmp, requests, stats)
 
   end subroutine dist_spmv_init
 
@@ -210,18 +210,18 @@ contains
   !   Inputs:
   !      rowptr, colind, nzval  - local CSR (rowptr(1:m_loc+1), colind(1:nnz), nzval(1:nnz))
   !      x_local(1:m_loc)       - local portion of x (corresponds to fst_row..last_row)
-  !      halo (precomputed)
+  !      halo (precomputed in the init)
   !   Output:
   !      y_local(1:m_loc)
   !----------------------------------------------------------------------
 
   subroutine dist_spmv(rowptr, colind, nzval, x_local, y_local, halo, comm, ierr)
-    integer(c_int), intent(in) :: rowptr(0:), colind(:)
+    integer(c_int), intent(in) :: rowptr(:), colind(:)
     real(c_double), intent(in) :: nzval(:)
     real(c_double), intent(in) :: x_local(:)
     real(c_double), intent(out) :: y_local(:)
     type(halo_t), intent(in) :: halo
-    integer, intent(in), optional :: comm
+    integer, intent(in) :: comm
     integer, intent(out) :: ierr
 
     integer :: i, j, k, p, idx, owner, pos, jp
