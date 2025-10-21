@@ -188,7 +188,6 @@ contains
             requests(k), ierr)
     enddo
 
-    allocate(r_requests(send_to_size))
     do k = 1, send_to_size
        rank = halo%send_to(k)
        cnt = halo%sendcounts(rank+1)
