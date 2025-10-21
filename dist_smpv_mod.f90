@@ -85,7 +85,7 @@ contains
        ! no halo needed (assign empty arrays)
        halo%nhalo = 0
        halo%nhalo_send=0
-       allocate(halo%halo_cols(0), halo%owners(0))
+       allocate(halo%halo_cols(0), halo%col_owners(0))
        allocate(halo%send_cols(0), halo%send_to(0))
        allocate(halo%sendcounts(0), halo%sdispls(0))
        allocate(halo%recvcounts(0), halo%rdispls(0))
@@ -176,14 +176,14 @@ contains
     halo%nhalo_send = send_to_size
     
     !need to do a communication to get the indices to send (so i send what i need to recv in halo_cols)
-    allocate(s_requests(recv_from_size + send_to_size))
+    allocate(requests(recv_from_size + send_to_size))
     allocate(stats(MPI_STATUS_SIZE *(recv_from_size + send_to_size))
 
     do k = 1, recv_from_size
        rank = halo%recv_from(k)
        cnt = halo%recvcounts(rank+1)
        indx = halo%rdispls(rank+1)
-       call MPI_Isend(halo%halo_cols(index), cnt, MPI_INTEGER, &
+       call MPI_Isend(halo%halo_cols(indx), cnt, MPI_INTEGER, &
             rank, tag, comm, &
             requests(k), ierr)
     enddo
@@ -193,7 +193,7 @@ contains
        rank = halo%send_to(k)
        cnt = halo%sendcounts(rank+1)
        indx = halo%sdispls(rank+1)
-       call MPI_Irecv(halo%send_cols(index), cnt, MPI_INTEGER, &
+       call MPI_Irecv(halo%send_cols(indx), cnt, MPI_INTEGER, &
             rank, tag, comm, &
             requests(recv_from_size + k), ierr)
     enddo
@@ -256,23 +256,23 @@ contains
     end if
 
     
-    ! Build send buffer: extract x values for halo_cols, packed in send_order
-    allocate(sendbuf(halo%nhalo))
-    do p = 1, halo%nhalo
-       idx = halo%send_order(p)            ! idx indexes halo%halo_cols
-       sendbuf(p) = x_value_for_global( halo%halo_cols(idx), x_local, halo )
-    end do
-
-    ! Allocate recv buffer sized total recv entries
-    allocate(recvbuf( halo%rdispls(nprocs) + halo%recvcounts(nprocs) ))
-    ! Post Irecv from each src rank where recvcounts>0
-    nnei = size(halo%recv_from)
-
-    
-    total_reqs = nnei + count(halo%sendcounts > 0)
-    allocate(reqs(total_reqs))
-    allocate(stats(MPI_STATUS_SIZE * total_reqs))
-    reqs_count = 0
+!!$    ! Build send buffer: extract x values for halo_cols, packed in send_order
+!!$    allocate(sendbuf(halo%nhalo))
+!!$    do p = 1, halo%nhalo
+!!$       idx = halo%send_order(p)            ! idx indexes halo%halo_cols
+!!$       sendbuf(p) = x_value_for_global( halo%halo_cols(idx), x_local, halo )
+!!$    end do
+!!$
+!!$    ! Allocate recv buffer sized total recv entries
+!!$    allocate(recvbuf( halo%rdispls(nprocs) + halo%recvcounts(nprocs) ))
+!!$    ! Post Irecv from each src rank where recvcounts>0
+!!$    nnei = size(halo%recv_from)
+!!$
+!!$    
+!!$    total_reqs = nnei + count(halo%sendcounts > 0)
+!!$    allocate(reqs(total_reqs))
+!!$    allocate(stats(MPI_STATUS_SIZE * total_reqs))
+!!$    reqs_count = 0
 !!$
 !!$    ! Irecv
 !!$    do k = 1, size(halo%recv_from)
