@@ -99,6 +99,7 @@ program small_superlu
 
   call dist_spmv_init(m_loc, fst_row, n, nprocs, iam, rowptr, colind, task_row_starts, MPI_COMM_WORLD, halo, ierr)
 
+  print*,'DID spmv init: iam = ', iam
 
 ! Print some metadata
   print *, 'iam = ', iam, 'halo rank =', halo%rank

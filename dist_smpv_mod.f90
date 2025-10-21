@@ -218,7 +218,11 @@ contains
             requests(recv_from_size + k), ierr)
     enddo
 
+    print*,'DID SEND & RECV: iam = ', myrank
+    
     call MPI_Waitall(recv_from_size+send_to_size, requests, stats, ierr)
+
+    print*,'DID WAITALL: iam = ', myrank
 
     
     ! Clean up FINISH
