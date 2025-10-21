@@ -184,9 +184,10 @@ contains
     send_to_size = nowners
     halo%nhalo_send = send_to_size
     
-    print *, 'D: iam = ', myrank,'send_to_size =', send_to_size
-    print *, 'D: iam = ', myrank,'recv_from_size =', recv_from_size
-    print *, 'D: iam = ', myrank,'nhalo =', halo%nhalo
+    print *, 'D3: iam = ', myrank,'send_to_size =', send_to_size
+    print *, 'D3: iam = ', myrank,'recv_from_size =', recv_from_size
+    print *, 'D3: iam = ', myrank,'recv_from =', halo%recv_from
+    print *, 'D3: iam = ', myrank,'send_to =', halo%send_to
 
     
     !need to do a communication to get the indices to send (so i send what i need to recv in halo_cols)
