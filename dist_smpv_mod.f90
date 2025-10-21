@@ -198,9 +198,11 @@ contains
     allocate(stats(MPI_STATUS_SIZE *(recv_from_size + send_to_size)))
 
     do k = 1, recv_from_size
-       rank = halo%recv_from(k) ! this is 0-based rank
+       rank = halo%recv_from(k) ! this is 0-based rank (so add 1 when indexing into arrays)
        cnt = halo%recvcounts(rank+1)
        indx = halo%rdispls(rank+1) + 1
+       print*,'D4 SEND: iam = ', myrank,'rank =', rank, 'cnt =', cnt, 'indx = ',indx
+
        call MPI_Isend(halo%halo_cols(indx), cnt, MPI_INTEGER, &
             rank, tag, comm, &
             requests(k), ierr)
@@ -210,6 +212,7 @@ contains
        rank = halo%send_to(k)
        cnt = halo%sendcounts(rank+1)
        indx = halo%sdispls(rank+1) + 1
+       print*,'D4 RECV: iam = ', myrank,'rank =', rank, 'cnt =', cnt, 'indx = ',indx
        call MPI_Irecv(halo%send_cols(indx), cnt, MPI_INTEGER, &
             rank, tag, comm, &
             requests(recv_from_size + k), ierr)
