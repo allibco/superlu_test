@@ -177,7 +177,7 @@ contains
     
     !need to do a communication to get the indices to send (so i send what i need to recv in halo_cols)
     allocate(requests(recv_from_size + send_to_size))
-    allocate(stats(MPI_STATUS_SIZE *(recv_from_size + send_to_size))
+    allocate(stats(MPI_STATUS_SIZE *(recv_from_size + send_to_size)))
 
     do k = 1, recv_from_size
        rank = halo%recv_from(k)
