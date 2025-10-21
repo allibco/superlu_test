@@ -188,6 +188,8 @@ contains
     print *, 'D3: iam = ', myrank,'recv_from_size =', recv_from_size
     print *, 'D3: iam = ', myrank,'recv_from =', halo%recv_from
     print *, 'D3: iam = ', myrank,'send_to =', halo%send_to
+    print *, 'D3: iam = ', myrank,'rdispls =', halo%rdispls
+    print *, 'D3: iam = ', myrank,'sdispls =', halo%sdispls
 
     
     !need to do a communication to get the indices to send (so i send what i need to recv in halo_cols)
@@ -195,9 +197,9 @@ contains
     allocate(stats(MPI_STATUS_SIZE *(recv_from_size + send_to_size)))
 
     do k = 1, recv_from_size
-       rank = halo%recv_from(k)
+       rank = halo%recv_from(k) ! this is 0-based rank
        cnt = halo%recvcounts(rank+1)
-       indx = halo%rdispls(rank+1)
+       indx = halo%rdispls(rank+1) + 1
        call MPI_Isend(halo%halo_cols(indx), cnt, MPI_INTEGER, &
             rank, tag, comm, &
             requests(k), ierr)
@@ -206,7 +208,7 @@ contains
     do k = 1, send_to_size
        rank = halo%send_to(k)
        cnt = halo%sendcounts(rank+1)
-       indx = halo%sdispls(rank+1)
+       indx = halo%sdispls(rank+1) + 1
        call MPI_Irecv(halo%send_cols(indx), cnt, MPI_INTEGER, &
             rank, tag, comm, &
             requests(recv_from_size + k), ierr)
