@@ -199,6 +199,20 @@ contains
 
     requests = MPI_REQUEST_NULL
     stats = 0
+
+
+print*, 'SANITY: myrank=', myrank, 'recv_from_size=', recv_from_size, 'send_to_size=', send_to_size
+if (allocated(halo%halo_cols)) then
+  print*, 'SANITY: myrank=', myrank, ' halo%halo_cols size=', size(halo%halo_cols)
+else
+  print*, 'SANITY: myrank=', myrank, ' halo%halo_cols NOT ALLOCATED'
+endif
+
+if (allocated(halo%send_cols)) then
+  print*, 'SANITY: myrank=', myrank, ' halo%send_cols size=', size(halo%send_cols)
+else
+  print*, 'SANITY: myrank=', myrank, ' halo%send_cols NOT ALLOCATED'
+endif
     
     do k = 1, recv_from_size
        rank = halo%recv_from(k) ! this is 0-based rank (so add 1 when indexing into arrays)
@@ -228,8 +242,9 @@ contains
        call MPI_Irecv(halo%send_cols(indx), cnt, MPI_INTEGER, &
             rank, tag, comm, &
             requests(recv_from_size + k), ierr)
-       print*, 'Irecv returned nonzero ierr=',ierr, 'myrank=', myrank
-
+       if (ierr /= 0) then
+          print*, 'Irecv returned nonzero ierr=',ierr, 'myrank=', myrank
+       endif
     enddo
 
     print*,'DID SEND & RECV: iam = ', myrank
