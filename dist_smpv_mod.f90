@@ -190,6 +190,7 @@ contains
     print *, 'D3: iam = ', myrank,'send_to =', halo%send_to
     print *, 'D3: iam = ', myrank,'rdispls =', halo%rdispls
     print *, 'D3: iam = ', myrank,'sdispls =', halo%sdispls
+    print *, 'D3: iam = ', myrank,'halo_cols =', halo%halo_cols
 
     
     !need to do a communication to get the indices to send (so i send what i need to recv in halo_cols)
