@@ -48,7 +48,7 @@ contains
     integer :: last_row
     integer :: nowners
     integer, allocatable :: requests(:)  
-    integer, allocatable :: stats(:)
+    integer, allocatable :: stats(:,:)
 
     ierr = 0
     tag = 1314
@@ -195,8 +195,10 @@ contains
     
     !need to do a communication to get the indices to send (so i send what i need to recv in halo_cols)
     allocate(requests(recv_from_size + send_to_size))
-    allocate(stats(MPI_STATUS_SIZE *(recv_from_size + send_to_size)))
+    allocate(stats(MPI_STATUS_SIZE, (recv_from_size + send_to_size)))
 
+    requests = MPI_REQUEST_NULL
+    
     do k = 1, recv_from_size
        rank = halo%recv_from(k) ! this is 0-based rank (so add 1 when indexing into arrays)
        cnt = halo%recvcounts(rank+1)
