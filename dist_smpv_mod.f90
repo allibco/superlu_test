@@ -198,9 +198,13 @@ contains
     allocate(stats(MPI_STATUS_SIZE, (recv_from_size + send_to_size)))
 
     requests = MPI_REQUEST_NULL
+    stats = 0
     
     do k = 1, recv_from_size
        rank = halo%recv_from(k) ! this is 0-based rank (so add 1 when indexing into arrays)
+       if (rank < 0 .or. rank >= nprocs) then
+          print*, 'BAD RANK in recv_from(',k,') = ', rank
+       endif
        cnt = halo%recvcounts(rank+1)
        indx = halo%rdispls(rank+1) + 1
        print*,'D4 SEND: iam = ', myrank,'rank =', rank, 'cnt =', cnt, 'indx = ',indx
@@ -208,6 +212,9 @@ contains
        call MPI_Isend(halo%halo_cols(indx), cnt, MPI_INTEGER, &
             rank, tag, comm, &
             requests(k), ierr)
+       if (ierr /= 0) then
+          print*, 'Isend returned nonzero ierr=',ierr, 'myrank=', myrank
+       endif
     enddo
 
     do k = 1, send_to_size
@@ -218,6 +225,8 @@ contains
        call MPI_Irecv(halo%send_cols(indx), cnt, MPI_INTEGER, &
             rank, tag, comm, &
             requests(recv_from_size + k), ierr)
+       print*, 'Irecv returned nonzero ierr=',ierr, 'myrank=', myrank
+
     enddo
 
     print*,'DID SEND & RECV: iam = ', myrank
