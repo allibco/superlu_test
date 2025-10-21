@@ -10,12 +10,15 @@ module dist_spmv_mod
      integer :: rank
      integer :: n_global
      integer :: fst_row, last_row, m_loc
-     integer, allocatable :: owners(:)    ! owners for each halo col (size nhalo)
-     integer, allocatable :: halo_cols(:) ! global column indices of halo entries (sorted)
-     integer :: nhalo
-     integer, allocatable :: sendcounts(:), sdispls(:)
-     integer, allocatable :: recvcounts(:), rdispls(:)
+     integer, allocatable :: col_owners(:)! owners for each halo col (size nhalo)
+     integer, allocatable :: halo_cols(:) ! global column indices of halo entries to recv (sorted, size nhalo)
+     integer :: nhalo !number of halo entries that we need to recv
+     integer :: nhalo_send !how many we need to send
+     integer, allocatable :: sendcounts(:), sdispls(:)  !length nprocs
+     integer, allocatable :: recvcounts(:), rdispls(:)  !length nprocs
      integer, allocatable :: recv_from(:)  ! ranks we expect data from (list)
+     integer, allocatable :: send_to(:)  ! ranks we send data to (list)
+     integer, allocatable :: send_cols(:) ! global indices that we need to send to others
   end type halo_t
 
 contains
@@ -38,15 +41,17 @@ contains
     type(halo_t), intent(out) :: halo
     integer, intent(out) :: ierr
 
-    integer :: i, j, k, nn, rank, nprocs, jp
+    integer :: i, j, k, nn, rank, nprocs, jp, tag
     integer, allocatable :: tmp(:)
     integer :: owner
-    integer :: rows_per_proc_num, rows_per_proc_den
+    integer :: send_to_size, recv_from_size, cnt, indx
     integer :: last_row
-    integer, allocatable :: owner_set(:)
     integer :: nowners
+    integer, allocatable :: requests(:)  
+    integer, allocatable :: stats(:)
 
     ierr = 0
+    tag = 1314
 
     halo%rank = myrank
     halo%nprocs_local = ntasks
@@ -76,10 +81,12 @@ contains
        end do
     end do
 
-    if (nn == 0) then
+    if (nn == 0) then 
        ! no halo needed (assign empty arrays)
        halo%nhalo = 0
+       halo%nhalo_send=0
        allocate(halo%halo_cols(0), halo%owners(0))
+       allocate(halo%send_cols(0), halo%send_to(0))
        allocate(halo%sendcounts(0), halo%sdispls(0))
        allocate(halo%recvcounts(0), halo%rdispls(0))
        allocate(halo%recv_from(0))
@@ -94,12 +101,12 @@ contains
     allocate(halo%halo_cols(nn))
     halo%halo_cols = tmp(1:nn)
 
-    ! 3) Determine owner of each halo column (use task_row_starts)
+    ! 3) Determine owner of each halo column i need (use task_row_starts)
     !   halo%halo_cols and task_row_starts are sorted, so we can go in order
-    allocate(halo%owners(halo%nhalo))
-    allocate(halo%sendcounts(halo%nprocs_local))
-    halo%sendcounts = 0
-    halo%owners = 0
+    allocate(halo%col_owners(halo%nhalo))
+    allocate(halo%recvcounts(halo%nprocs_local))
+    halo%recvcounts = 0
+    halo%col_owners = 0
 
     rank = 0 ! first rank
     ! Advance to the correct rank if halo_cols(k) has crossed next boundary
@@ -107,30 +114,32 @@ contains
        do while (rank < halo%nprocs_local -1 .and. halo%halo_cols(k) >= task_row_starts(rank+2))
           rank = rank + 1
        end do
-       halo%owners(k) = rank !0-based owner
-       !Build per-destination sendcounts
-       halo%sendcounts(rank + 1) = halo%sendcounts(rank + 1) + 1  ! +1 since Fortran arrays are 1-based
+       halo%col_owners(k) = rank !0-based owner
+       !add to recvcounts for that proc
+       halo%recvcounts(rank + 1) = halo%recvcounts(rank + 1) + 1  ! +1 since Fortran arrays are 1-based
     end do
 
-    ! 4) Compute send displacements
-    allocate(halo%sdispls(halo%nprocs_local))
-    halo%sdispls(1) = 0
-    do rank = 2, ntasks
-        halo%sdispls(rank) = halo%sdispls(rank - 1) + halo%sendcounts(rank - 1)
-    end do
-
-    ! 5) Determine recvcounts by exchanging sendcounts
-    allocate(halo%recvcounts(halo%nprocs_local))
+    ! Determine sendcounts by sending recvcounts to each rank 
+    allocate(halo%sendcounts(halo%nprocs_local))
     halo%recvcounts = 0
-    call MPI_Alltoall(halo%sendcounts, 1, MPI_INTEGER, halo%recvcounts, 1, MPI_INTEGER, comm, ierr)
-
-    !calc recv displacements
+    call MPI_Alltoall(halo%recvcounts, 1, MPI_INTEGER, halo%sendcounts, 1, MPI_INTEGER, comm, ierr)
+    !recvcounts is how many i need to recv from each proc
+    !sendcounts is how many i need to send to each
+       
+    ! 4) Compute displacements for data to recv (indexes into halo_cols)
     allocate(halo%rdispls(halo%nprocs_local))
-    halo%rdispls = 0
-    do rank = 2, halo%nprocs_local
-       halo%rdispls(rank) = halo%rdispls(rank-1) + halo%recvcounts(rank-1)
+    halo%rdispls(1) = 0
+    do rank = 2, ntasks
+        halo%rdispls(rank) = halo%rdispls(rank - 1) + halo%recvcounts(rank - 1)
     end do
 
+    !calc displacements for data that we need to send 
+    allocate(halo%sdispls(halo%nprocs_local))
+    halo%sdispls = 0
+    do rank = 2, halo%nprocs_local
+       halo%sdispls(rank) = halo%sdispls(rank-1) + halo%sendcounts(rank-1)
+    end do
+        
     ! Build list of ranks we will receive from (nonzero recvcounts)
     nowners = 0
     do rank = 1, halo%nprocs_local
@@ -146,9 +155,54 @@ contains
           halo%recv_from(nowners) = rank-1 !0-based
        end if
     end do
+    recv_from_size = nowners
+    
+    ! Build list of ranks we will send to (nonzero sendcounts)
+    nowners = 0
+    do rank = 1, halo%nprocs_local
+       if (halo%sendcounts(rank) > 0) then
+          nowners = nowners + 1
+       end if
+    end do
+    allocate(halo%send_to(nowners))
+    nowners = 0
+    do rank = 1, halo%nprocs_local
+       if (halo%sendcounts(rank) > 0) then
+          nowners = nowners + 1
+          halo%send_to(nowners) = rank-1 !0-based
+       end if
+    end do
+    send_to_size = nowners
+    halo%nhalo_send = send_to_size
+    
+    !need to do a communication to get the indices to send (so i send what i need to recv in halo_cols)
+    allocate(s_requests(recv_from_size + send_to_size))
+    allocate(stats(MPI_STATUS_SIZE *(recv_from_size + send_to_size))
 
-    ! Clean up
-    deallocate(tmp)
+    do k = 1, recv_from_size
+       rank = halo%recv_from(k)
+       cnt = halo%recvcounts(rank+1)
+       indx = halo%rdispls(rank+1)
+       call MPI_Isend(halo%halo_cols(index), cnt, MPI_INTEGER, &
+            rank, tag, comm, &
+            requests(k), ierr)
+    enddo
+
+    allocate(r_requests(send_to_size))
+    do k = 1, send_to_size
+       rank = halo%send_to(k)
+       cnt = halo%sendcounts(rank+1)
+       indx = halo%sdispls(rank+1)
+       call MPI_Irecv(halo%send_cols(index), cnt, MPI_INTEGER, &
+            rank, tag, comm, &
+            requests(recv_from_size + k), ierr)
+    enddo
+
+    call MPI_Waitall(recv_from_size+send_to_size, requests, stats, ierr)
+
+    
+    ! Clean up FINISH
+    deallocate(tmp, stats)
 
   end subroutine dist_spmv_init
 
@@ -162,65 +216,63 @@ contains
   !      y_local(1:m_loc)
   !----------------------------------------------------------------------
 
-!!$  subroutine dist_spmv(rowptr, colind, nzval, x_local, y_local, halo, comm, ierr)
-!!$    integer(c_int), intent(in) :: rowptr(0:), colind(:)
-!!$    real(c_double), intent(in) :: nzval(:)
-!!$    real(c_double), intent(in) :: x_local(:)
-!!$    real(c_double), intent(out) :: y_local(:)
-!!$    type(halo_t), intent(in) :: halo
-!!$    integer, intent(in), optional :: comm
-!!$    integer, intent(out) :: ierr
-!!$
-!!$    integer :: use_comm
-!!$    integer :: i, j, k, p, idx, owner, pos
-!!$    integer :: m_loc
-!!$    integer :: nprocs
-!!$    integer, parameter :: dp_kind = c_double
-!!$    integer :: reqs_count, total_reqs
-!!$    integer, allocatable :: reqs(:)
-!!$    integer, allocatable :: stats(:)
-!!$    real(c_double), allocatable :: sendbuf(:), recvbuf(:)
-!!$    integer :: sdis, rdis
-!!$    integer :: nnei
-!!$
-!!$    ierr = 0
-!!$    if (present(comm)) then
-!!$       use_comm = comm
-!!$    else
-!!$       use_comm = MPI_COMM_WORLD
-!!$    end if
-!!$
-!!$    m_loc = halo%m_loc
-!!$    nprocs = halo%nprocs_local
-!!$
-!!$    ! Zero output
-!!$    y_local = 0.0d0
-!!$
-!!$    ! If no halo, simple local SpMV
-!!$    if (halo%nhalo == 0) then
-!!$       do i = 1, m_loc
-!!$          do j = rowptr(i-1), rowptr(i)-1
-!!$             y_local(i) = y_local(i) + nzval(j) * x_local( colind(j) - halo%fst_row + 1 )
-!!$          end do
-!!$       end do
-!!$       return
-!!$    end if
-!!$
-!!$    ! Build send buffer: extract x values for halo_cols, packed in send_order
-!!$    allocate(sendbuf(halo%nhalo))
-!!$    do p = 1, halo%nhalo
-!!$       idx = halo%send_order(p)            ! idx indexes halo%halo_cols
-!!$       sendbuf(p) = x_value_for_global( halo%halo_cols(idx), x_local, halo )
-!!$    end do
-!!$
-!!$    ! Allocate recv buffer sized total recv entries
-!!$    allocate(recvbuf( halo%rdispls(nprocs) + halo%recvcounts(nprocs) ))
-!!$    ! Post Irecv from each src rank where recvcounts>0
-!!$    nnei = size(halo%recv_from)
-!!$    total_reqs = nnei + count(halo%sendcounts > 0)
-!!$    allocate(reqs(total_reqs))
-!!$    allocate(stats(MPI_STATUS_SIZE * total_reqs))
-!!$    reqs_count = 0
+  subroutine dist_spmv(rowptr, colind, nzval, x_local, y_local, halo, comm, ierr)
+    integer(c_int), intent(in) :: rowptr(0:), colind(:)
+    real(c_double), intent(in) :: nzval(:)
+    real(c_double), intent(in) :: x_local(:)
+    real(c_double), intent(out) :: y_local(:)
+    type(halo_t), intent(in) :: halo
+    integer, intent(in), optional :: comm
+    integer, intent(out) :: ierr
+
+    integer :: i, j, k, p, idx, owner, pos, jp
+    integer :: m_loc
+    integer :: nprocs
+    integer, parameter :: dp_kind = c_double
+    integer :: reqs_count, total_reqs
+    integer, allocatable :: reqs(:)
+    integer, allocatable :: stats(:)
+    real(c_double), allocatable :: sendbuf(:), recvbuf(:)
+    integer :: sdis, rdis
+    integer :: nnei
+
+    ierr = 0
+    
+    m_loc = halo%m_loc
+    nprocs = halo%nprocs_local
+
+    ! Zero output
+    y_local = 0.0d0
+
+    ! If no halo, simple local SpMV
+    if (halo%nhalo == 0) then
+       do i = 1, m_loc
+          do j = rowptr(i), rowptr(i+1)-1
+             jp = j+1
+             y_local(i) = y_local(i) + nzval(jp) * x_local( colind(jp) - halo%fst_row )
+          end do
+       end do
+       return
+    end if
+
+    
+    ! Build send buffer: extract x values for halo_cols, packed in send_order
+    allocate(sendbuf(halo%nhalo))
+    do p = 1, halo%nhalo
+       idx = halo%send_order(p)            ! idx indexes halo%halo_cols
+       sendbuf(p) = x_value_for_global( halo%halo_cols(idx), x_local, halo )
+    end do
+
+    ! Allocate recv buffer sized total recv entries
+    allocate(recvbuf( halo%rdispls(nprocs) + halo%recvcounts(nprocs) ))
+    ! Post Irecv from each src rank where recvcounts>0
+    nnei = size(halo%recv_from)
+
+    
+    total_reqs = nnei + count(halo%sendcounts > 0)
+    allocate(reqs(total_reqs))
+    allocate(stats(MPI_STATUS_SIZE * total_reqs))
+    reqs_count = 0
 !!$
 !!$    ! Irecv
 !!$    do k = 1, size(halo%recv_from)
@@ -326,7 +378,7 @@ contains
 !!$    ! cleanup temporaries
 !!$    deallocate(sendbuf, recvbuf, reqs, stats, halo_values, rcur)
 !!$
-!!$  end subroutine dist_spmv
+   end subroutine dist_spmv
 
   
   !----------------------------------------------------------------------
