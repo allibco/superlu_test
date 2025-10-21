@@ -128,7 +128,7 @@ contains
        
     ! 4) Compute displacements for data to recv (indexes into halo_cols)
     allocate(halo%rdispls(halo%nprocs_local))
-    halo%rdispls(1) = 0
+    halo%rdispls = 0
     do rank = 2, ntasks
         halo%rdispls(rank) = halo%rdispls(rank - 1) + halo%recvcounts(rank - 1)
     end do
@@ -174,6 +174,11 @@ contains
     end do
     send_to_size = nowners
     halo%nhalo_send = send_to_size
+    
+    print *, 'D: iam = ', myrank,'send_to_size =', send_to_size
+    print *, 'D: iam = ', myrank,'recv_from_size =', recv_from_size
+    print *, 'D: iam = ', myrank,'nhalo =', halo%nhalo
+
     
     !need to do a communication to get the indices to send (so i send what i need to recv in halo_cols)
     allocate(requests(recv_from_size + send_to_size))
