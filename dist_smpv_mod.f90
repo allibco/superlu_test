@@ -202,7 +202,7 @@ contains
     
     do k = 1, recv_from_size
        rank = halo%recv_from(k) ! this is 0-based rank (so add 1 when indexing into arrays)
-       if (rank < 0 .or. rank >= nprocs) then
+       if (rank < 0 .or. rank >= ntasks) then
           print*, 'BAD RANK in recv_from(',k,') = ', rank
        endif
        cnt = halo%recvcounts(rank+1)
@@ -219,6 +219,9 @@ contains
 
     do k = 1, send_to_size
        rank = halo%send_to(k)
+       if (rank < 0 .or. rank >= ntasks) then
+          print*, 'BAD RANK in recv_from(',k,') = ', rank
+       endif
        cnt = halo%sendcounts(rank+1)
        indx = halo%sdispls(rank+1) + 1
        print*,'D4 RECV: iam = ', myrank,'rank =', rank, 'cnt =', cnt, 'indx = ',indx
