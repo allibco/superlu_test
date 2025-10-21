@@ -121,11 +121,20 @@ contains
 
     ! Determine sendcounts by sending recvcounts to each rank 
     allocate(halo%sendcounts(halo%nprocs_local))
-    halo%recvcounts = 0
+    halo%sendcounts = 0
+
+    print *, 'D1: iam = ', iam,'sendcounts:', halo%sendcounts
+    print *, 'D1: iam = ', iam,'recvcounts:', halo%recvcounts
+
+    
     call MPI_Alltoall(halo%recvcounts, 1, MPI_INTEGER, halo%sendcounts, 1, MPI_INTEGER, comm, ierr)
     !recvcounts is how many i need to recv from each proc
     !sendcounts is how many i need to send to each
-       
+
+    print *, 'D2: iam = ', iam,'sendcounts:', halo%sendcounts
+    print *, 'D2: iam = ', iam,'recvcounts:', halo%recvcounts
+
+    
     ! 4) Compute displacements for data to recv (indexes into halo_cols)
     allocate(halo%rdispls(halo%nprocs_local))
     halo%rdispls = 0
