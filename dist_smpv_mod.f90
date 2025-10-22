@@ -315,8 +315,8 @@ contains
     ! Build send buffer: extract x values for halo_cols, packed in send_order
     halo%sendbuf = 0.0
     do p = 1, halo%nhalo_send
-       id = halo%send_cols(p) ! this is the global col id to send
-       halo%sendbuf(p) = x_local(id - first_row) 
+       id = halo%send_cols(p) ! this is the global col id to send (0-based)
+       halo%sendbuf(p) = x_local(id - first_row + 1) 
     end do
 
     ! Post Irecv from each src rank where recvcounts>0
