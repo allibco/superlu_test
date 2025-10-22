@@ -200,7 +200,14 @@ contains
     requests = MPI_REQUEST_NULL
     stats = 0
 
-
+    !allocate send_cols
+    cnt = 0
+    do k = 1, send_to_size
+       rank = halo%send_to(k) ! 0-indexed
+       cnt = cnt + halo%sendcounts(rank+1)
+    enddo
+    allocate(halo%send_cols(cnt))
+    
 print*, 'SANITY: myrank=', myrank, 'recv_from_size=', recv_from_size, 'send_to_size=', send_to_size
 if (allocated(halo%halo_cols)) then
   print*, 'SANITY: myrank=', myrank, ' halo%halo_cols size=', size(halo%halo_cols)
