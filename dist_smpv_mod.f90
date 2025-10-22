@@ -275,7 +275,7 @@ contains
     real(c_double), intent(in) :: nzval(:)
     real(c_double), intent(in) :: x_local(:)
     real(c_double), intent(out) :: y_local(:)
-    type(halo_t), intent(in) :: halo
+    type(halo_t), intent(inout) :: halo
     integer, intent(in) :: comm
     integer, intent(out) :: ierr
 
