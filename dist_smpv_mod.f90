@@ -288,7 +288,7 @@ contains
     integer, allocatable :: stats(:,:)
     integer :: sdis, rdis
     integer :: num_recvs, num_sends
-    integer :: tag, owner
+    integer :: tag, owner, myrank
 
     ierr = 0
     tag = 1315
@@ -296,7 +296,8 @@ contains
     m_loc = halo%m_loc
     nprocs = halo%nprocs_local
     first_row = halo%fst_row
-    
+    call MPI_Comm_rank(comm, myrank, ierr)
+
     ! Zero output
     y_local = 0.0d0
 
@@ -352,13 +353,18 @@ contains
 
 
     !we should do our diag block (local) multiply part here
-    
+
 
     ! Waitall
     if (reqs_count > 0) then
        call MPI_Waitall(reqs_count, reqs, stats, ierr)
     end if
 
+    print *, 'MATVEC: iam = ', myrank,'SENDbuf =', halo%sendbuf
+    print *, 'MATVEC: iam = ', myrank,'RECVbuf =', halo%recvbuf
+
+
+    
 !!$    ! Now we have received remote x packed: recvbuf(rdis+1 : rdis+recvcounts)
 !!$    ! Build a small map from halo global column -> value (simple linear search; halo sizes usually small)
 !!$    ! We'll place recv values into an array 'halo_values' in same order as halo%halo_cols.
