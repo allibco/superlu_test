@@ -342,13 +342,17 @@ contains
     end do
 
     ! Isend
-    do k = 0, num_sends
+    do k = 1, num_sends
        owner = halo%send_to(k) !0-based rank
        sdis = halo%sdispls(owner+1) !0-based
        call MPI_Isend(halo%sendbuf(sdis+1), halo%sendcounts(owner+1), MPI_DOUBLE_PRECISION, owner, &
             tag, comm, reqs(reqs_count+1), ierr)
        reqs_count = reqs_count + 1
     end do
+
+
+    !we should do our diag block (local) multiply part here
+    
 
     ! Waitall
     if (reqs_count > 0) then
