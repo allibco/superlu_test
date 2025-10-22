@@ -61,7 +61,7 @@ contains
     halo%fst_row = fst_row
     halo%m_loc = m_loc
     last_row = fst_row + m_loc - 1
-    halo%last_row = last_
+    halo%last_row = last_row
     ! 1) Collect remote column indices (may have duplicates)
     allocate(tmp(0)) !empty array
     nn = 0
@@ -242,11 +242,11 @@ contains
        endif
     enddo
 
-    print*,'DID SEND & RECV: iam = ', myrank
+    !print*,'DID SEND & RECV: iam = ', myrank
     
     call MPI_Waitall(recv_from_size+send_to_size, requests, stats, ierr)
 
-    print*,'DID WAITALL: iam = ', myrank
+    !print*,'DID WAITALL: iam = ', myrank
 
     !allocate the sendbuf and recvbuf here so they can be reusued
     ! Build send buffer:for the data we will send to other procs
@@ -279,7 +279,7 @@ contains
     integer, intent(in) :: comm
     integer, intent(out) :: ierr
 
-    integer :: i, j, jp
+    integer :: i, j, jp, p, k, id
     integer :: m_loc, first_row
     integer :: nprocs
     integer, parameter :: dp_kind = c_double
@@ -288,7 +288,7 @@ contains
     integer, allocatable :: stats(:,:)
     integer :: sdis, rdis
     integer :: num_recvs, num_sends
-    integer :: tag
+    integer :: tag, owner
 
     ierr = 0
     tag = 1315
@@ -313,9 +313,10 @@ contains
 
     
     ! Build send buffer: extract x values for halo_cols, packed in send_order
+    halo%sendbuf = 0.0
     do p = 1, halo%nhalo_send
        id = halo%send_cols(p) ! this is the global col id to send
-       sendbuf(p) = x_local(id - first_row) 
+       halo%sendbuf(p) = x_local(id - first_row) 
     end do
 
     ! Post Irecv from each src rank where recvcounts>0
@@ -329,11 +330,13 @@ contains
     allocate(stats(MPI_STATUS_SIZE, total_reqs))
     reqs_count = 0
 
+    halo%recvbuf =0.0
+    
     ! Irecv
     do k = 1, num_recvs
        owner = halo%recv_from(k) !0-based rank
        rdis = halo%rdispls(owner+1) ! 0-based displacement
-       call MPI_Irecv(recvbuf(rdis+1), halo%recvcounts(owner+1), MPI_DOUBLE_PRECISION, owner, &
+       call MPI_Irecv(halo%recvbuf(rdis+1), halo%recvcounts(owner+1), MPI_DOUBLE_PRECISION, owner, &
                       tag, comm, reqs(reqs_count+1), ierr)
        reqs_count = reqs_count + 1
     end do
@@ -342,7 +345,7 @@ contains
     do k = 0, num_sends
        owner = halo%send_to(k) !0-based rank
           sdis = halo%sdispls(owner+1) !0-based
-          call MPI_Isend(sendbuf(sdis+1), halo%sendcounts(owner+1), MPI_DOUBLE_PRECISION, owner, &
+          call MPI_Isend(halo%sendbuf(sdis+1), halo%sendcounts(owner+1), MPI_DOUBLE_PRECISION, owner, &
                          tag, comm, reqs(reqs_count+1), ierr)
           reqs_count = reqs_count + 1
        end if
