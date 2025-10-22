@@ -101,7 +101,9 @@ program small_superlu
 
   print*,'DID spmv init: iam = ', iam
 
-  call dist_spmv(rowptr, colind, nzval, x, y, halo, MPI_COMM_WORLD, ierr)
+  call dist_spmv(rowptr, colind, nzval, b, y, halo, MPI_COMM_WORLD, ierr)
+
+  print*,'DID spmv: iam = ', iam, 'A*b = ', y
 
   
 !!$! Print some metadata
