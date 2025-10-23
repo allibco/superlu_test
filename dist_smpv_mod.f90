@@ -132,8 +132,8 @@ contains
     !recvcounts is how many i need to recv from each proc
     !sendcounts is how many i need to send to each
 
-    print *, 'D2: iam = ', myrank,'sendcounts:', halo%sendcounts
-    print *, 'D2: iam = ', myrank,'recvcounts:', halo%recvcounts
+    !print *, 'D2: iam = ', myrank,'sendcounts:', halo%sendcounts
+    !print *, 'D2: iam = ', myrank,'recvcounts:', halo%recvcounts
 
     
     ! 4) Compute displacements for data to recv (indexes into halo_cols)
@@ -223,7 +223,7 @@ contains
        endif
        cnt = halo%recvcounts(rank+1)
        indx = halo%rdispls(rank+1) + 1
-       print*,'D4 SEND: iam = ', myrank,'rank =', rank, 'cnt =', cnt, 'indx = ',indx
+       !print*,'D4 SEND: iam = ', myrank,'rank =', rank, 'cnt =', cnt, 'indx = ',indx
 
        call MPI_Isend(halo%halo_cols(indx), cnt, MPI_INTEGER, &
             rank, tag, comm, &
@@ -240,7 +240,7 @@ contains
        endif
        cnt = halo%sendcounts(rank+1)
        indx = halo%sdispls(rank+1) + 1
-       print*,'D4 RECV: iam = ', myrank,'rank =', rank, 'cnt =', cnt, 'indx = ',indx
+       !print*,'D4 RECV: iam = ', myrank,'rank =', rank, 'cnt =', cnt, 'indx = ',indx
        call MPI_Irecv(halo%send_cols(indx), cnt, MPI_INTEGER, &
             rank, tag, comm, &
             requests(recv_from_size + k), ierr)
@@ -278,6 +278,7 @@ contains
   !      halo (precomputed in the init)
   !   Output:
   !      y_local(1:m_loc)
+  ! NOTE: assumes that col_ind within each row are sorted!!!!
   !----------------------------------------------------------------------
 
   subroutine dist_spmv(rowptr, colind, nzval, x_local, y_local, halo, comm, ierr)
@@ -387,7 +388,7 @@ contains
           if (colind(jp) >= halo%fst_row .and. colind(jp) <= halo%last_row) then
              loc =  colind(jp) - halo%fst_row + 1 !colind is 0-bases 
              y_local(i) = y_local(i) + nzval(jp) * x_local(loc)
-             print*, 'S:iam = ', myrank, 'local i, jp', i,  jp
+             !print*, 'S:iam = ', myrank, 'local i, jp', i,  jp
           else
              ! find index into halo_cols
              ! linear search; can be replaced with hash if halo large
@@ -396,7 +397,7 @@ contains
              do k = starter_k, halo%nhalo
                 if (halo%halo_cols(k) == colind(jp)) then
                    y_local(i) = y_local(i) + nzval(jp) * halo%recvbuf(k)
-                   print*, 'S:iam = ', myrank, 'NOT local i, jp', i,  jp
+                   !print*, 'S:iam = ', myrank, 'NOT local i, jp', i,  jp
                    starter_k = k+1
                    exit
                 end if
