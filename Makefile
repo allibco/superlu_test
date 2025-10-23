@@ -54,6 +54,10 @@ superlu_bindings.o: superlu_bindings.F90
 small_superlu.o: small_superlu.F90 superlu_mod.o superlupara.o f_pdgsmv.o superlu_bindings.o
 	$(FC) $(FFLAGS) $(INCLUDES) -c $<
 
+matvec_only.o: matvec_only.F90 superlu_mod.o superlupara.o superlu_bindings.o
+	$(FC) $(FFLAGS) $(INCLUDES) -c $<
+
+
 #f_pdgsmv.o: f_pdgsmv.c
 #	$(CC) -c $(INCLUDES) $< -o $@
 
