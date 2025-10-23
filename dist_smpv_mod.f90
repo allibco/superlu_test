@@ -289,7 +289,7 @@ contains
     integer, intent(in) :: comm
     integer, intent(out) :: ierr
 
-    integer :: i, j, jp, p, k, id
+    integer :: i, j, jp, p, k, id, starter_k
     integer :: m_loc, first_row, loc
     integer :: nprocs
     integer, parameter :: dp_kind = c_double
@@ -380,8 +380,9 @@ contains
     print*,'IN spmv: iam = ', myrank, 'm_loc = ', m_loc
 
     ! Finally do local SpMV using halo_values when needed
-    do i = 1, m_loc
-       do j = rowptr(i), rowptr(i+1)-1
+    do i = 1, m_loc ! for each row
+       starter_k = 1
+       do j = rowptr(i), rowptr(i+1)-1 !for each col ind
           jp = j+1 !becuz rowptr is 0-based
           if (colind(jp) >= halo%fst_row .and. colind(jp) <= halo%last_row) then
              loc =  colind(jp) - halo%fst_row + 1 !colind is 0-bases 
@@ -390,11 +391,13 @@ contains
           else
              ! find index into halo_cols
              ! linear search; can be replaced with hash if halo large
-             do k = 1, halo%nhalo
+             ! but since halo_cols and col_ind are sorted, then linear
+             ! for each row, so shouldn't be too bad
+             do k = starter_k, halo%nhalo
                 if (halo%halo_cols(k) == colind(jp)) then
                    y_local(i) = y_local(i) + nzval(jp) * halo%recvbuf(k)
                    print*, 'S:iam = ', myrank, 'NOT local i, jp', i,  jp
-
+                   starter_k = k+1
                    exit
                 end if
              end do
