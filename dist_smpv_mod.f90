@@ -317,7 +317,8 @@ contains
        do i = 1, m_loc
           do j = rowptr(i), rowptr(i+1)-1
              jp = j+1
-             y_local(i) = y_local(i) + nzval(jp) * x_local( colind(jp) - halo%fst_row )
+             loc = colind(jp) - halo%fst_row + 1
+             y_local(i) = y_local(i) + nzval(jp) * x_local(loc )
           end do
        end do
        return
