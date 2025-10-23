@@ -28,8 +28,8 @@ MKL_LIBS = -Wl,--start-group \
 LIBS = -lsuperlu_dist_fortran -lsuperlu_dist $(MKL_LIBS)
 
 #OBJS = superlu_mod.o superlupara.o superlu_bindings.o f_pdgsmv.o small_superlu.o
-OBJS = superlu_mod.o superlupara.o superlu_bindings.o dist_smpv_mod.o small_superlu.o
-OBJS2 = superlu_mod.o superlupara.o superlu_bindings.o dist_smpv_mod.o matvec_only.o
+OBJS = superlu_mod.o superlupara.o superlu_bindings.o dist_spmv_mod.o small_superlu.o
+OBJS2 = superlu_mod.o superlupara.o superlu_bindings.o dist_spmv_mod.o matvec_only.o
 
 all: small_superlu.exe matvec_only.exe
 
@@ -45,16 +45,16 @@ superlu_mod.o: superlu_mod.f90 superlupara.o
 superlupara.o: superlupara.f90 
 	$(FC) $(FFLAGS) $(INCLUDES) -c $<
 
-dist_smpv_mod.o: dist_smpv_mod.f90 
+dist_spmv_mod.o: dist_spmv_mod.f90 
 	$(FC) $(FFLAGS) $(INCLUDES) -c $<
 
 superlu_bindings.o: superlu_bindings.F90
 	$(FC) $(FFLAGS) $(INCLUDES) -c $<
 
-small_superlu.o: small_superlu.F90 superlu_mod.o superlupara.o f_pdgsmv.o superlu_bindings.o
+small_superlu.o: small_superlu.F90 superlu_mod.o superlupara.o f_pdgsmv.o superlu_bindings.o dist_spmv_mod.o
 	$(FC) $(FFLAGS) $(INCLUDES) -c $<
 
-matvec_only.o: matvec_only.F90 superlu_mod.o superlupara.o superlu_bindings.o
+matvec_only.o: matvec_only.F90 superlu_mod.o superlupara.o superlu_bindings.o dist_spmv_mod.o
 	$(FC) $(FFLAGS) $(INCLUDES) -c $<
 
 
