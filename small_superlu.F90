@@ -103,7 +103,7 @@ program small_superlu
 
   call dist_spmv(rowptr, colind, nzval, b, y, halo, MPI_COMM_WORLD, ierr)
 
-  print*,'DID spmv: iam = ', iam, 'A*b = ', y
+  print*,'AFTERs spmv: iam = ', iam, 'A*b = ', y
 
   
 !!$! Print some metadata
