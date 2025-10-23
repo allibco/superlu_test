@@ -146,10 +146,15 @@ contains
     !calc displacements for data that we need to send 
     allocate(halo%sdispls(halo%nprocs_local))
     halo%sdispls = 0
+    cnt = halo%sendcounts(1)
     do rank = 2, halo%nprocs_local
        halo%sdispls(rank) = halo%sdispls(rank-1) + halo%sendcounts(rank-1)
+       cnt = cnt + halo%sendcounts(rank)
     end do
-        
+    !how many entries to send
+    halo%nhalo_send = cnt
+    
+    
     ! Build list of ranks we will receive from (nonzero recvcounts)
     nowners = 0
     do rank = 1, halo%nprocs_local
@@ -183,7 +188,7 @@ contains
        end if
     end do
     send_to_size = nowners
-    halo%nhalo_send = send_to_size
+
     
     print *, 'D3: iam = ', myrank,'send_to_size =', send_to_size
     print *, 'D3: iam = ', myrank,'recv_from_size =', recv_from_size
@@ -192,6 +197,8 @@ contains
     print *, 'D3: iam = ', myrank,'rdispls =', halo%rdispls
     print *, 'D3: iam = ', myrank,'sdispls =', halo%sdispls
     print *, 'D3: iam = ', myrank,'halo_cols =', halo%halo_cols
+    print *, 'D3: iam = ', myrank,'nhalo_send =', halo%nhalo_send
+    print *, 'D3: iam = ', myrank,'nhalo =', halo%nhalo
 
     
     !need to do a communication to get the indices to send (so i send what i need to recv in halo_cols)
