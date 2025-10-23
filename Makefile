@@ -31,7 +31,7 @@ LIBS = -lsuperlu_dist_fortran -lsuperlu_dist $(MKL_LIBS)
 OBJS = superlu_mod.o superlupara.o superlu_bindings.o dist_smpv_mod.o small_superlu.o
 OBJS2 = superlu_mod.o superlupara.o superlu_bindings.o dist_smpv_mod.o matvec_only.o
 
-all: small_superlu.exe
+all: small_superlu.exe matvec_only.exe
 
 small_superlu.exe: $(OBJS)
 	$(FC) $(FFLAGS) -o $@ $(OBJS) $(LIBS)

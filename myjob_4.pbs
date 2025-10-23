@@ -1,0 +1,19 @@
+#!/bin/bash -l
+
+#PBS -A NTDD0004
+#PBS -N mymatvec
+#PBS -q main       
+#PBS -l walltime=00:05:00    
+#PBS -l select=1:ncpus=4:mpiprocs=4
+#PBS -j oe                   
+
+# Set up temporary directory (recommended for I/O intensive jobs)
+export TMPDIR=${SCRATCH}/temp
+mkdir -p ${TMPDIR}
+
+# Load necessary modules
+module load superlu-dist/9.1.0
+
+
+# Execute your  program
+mpibind ./matvec_only.exe

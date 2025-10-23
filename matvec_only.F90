@@ -11,7 +11,7 @@ program small_superlu
   ! Local matrix storage
   integer :: iam, nprow, npcol, nprocs, info, i, ierr
   integer :: m_loc, fst_row
-  integer :: n = 4   ! Global size
+  integer :: n = 14   ! Global size
   integer :: nrhs = 1
   integer :: nnz_loc
   !integer(kind=c_int), allocatable :: rowptr(:), colind(:)
@@ -38,7 +38,6 @@ program small_superlu
   call MPI_Comm_rank(MPI_COMM_WORLD, iam, ierr)
   call MPI_Comm_size(MPI_COMM_WORLD, nprocs, ierr)
 
-
   
 ! Check we have exactly 2 processes
   if (nprocs /= 4) then
@@ -46,7 +45,6 @@ program small_superlu
      call MPI_Finalize(ierr)
      stop
   end if
-
   
   ! Local matrix partition (2 rows per proc for 4×4)
   if (iam == 0) then
@@ -76,7 +74,6 @@ program small_superlu
      colind = [8, 9, 10, 11 ]
      nzval  = [8.0d0, 7.0d0, 6.0d0, 3.0d0]
      b = [10.0d0, 10.0d0, 10.0d0, 10.0d0]
-
   else !3
      m_loc = 2
      fst_row = 10
@@ -91,7 +88,7 @@ program small_superlu
   end if
 
   allocate(task_row_starts(5))
-  task_row_starts=[0, 2, 4];
+  task_row_starts=[0, 4, 8, 12, 14];
   
 
   call dist_spmv_init(m_loc, fst_row, n, nprocs, iam, rowptr, colind, task_row_starts, MPI_COMM_WORLD, halo, ierr)
@@ -107,7 +104,7 @@ program small_superlu
   
   deallocate(rowptr)
   deallocate(colind, nzval)
-  deallocate(b, x, y)
+  deallocate(b, x, y, task_row_starts)
 
   call MPI_Finalize(ierr)
 
