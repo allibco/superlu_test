@@ -392,7 +392,7 @@ contains
        end do
     end do
 
-    print*,'IN spmv: iam = ', myrank, 'y_local = ', y_local
+    !print*,'IN spmv: iam = ', myrank, 'y_local = ', y_local
 
     ! cleanup temporaries !FINISH
     deallocate(reqs, stats)

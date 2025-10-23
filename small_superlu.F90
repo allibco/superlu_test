@@ -73,11 +73,11 @@ program small_superlu
   if (iam == 0) then
      m_loc = 2
      fst_row = 0
-     nnz_loc = 4
+     nnz_loc = 5
      allocate(rowptr(m_loc+1), colind(nnz_loc), nzval(nnz_loc), b(m_loc), berr(nrhs),  x(m_loc),  y(m_loc))
-     rowptr = [0, 2, 4] !0-based
-     colind = [0, 1, 1, 2]
-     nzval  = [1.0d0, 2.0d0, 3.0d0, 4.0d0]
+     rowptr = [0, 2, 5] !0-based
+     colind = [0, 1, 1, 2, 3]
+     nzval  = [1.0d0, 2.0d0, 3.0d0, 4.0d0, 1.0d0]
      b = [5.0d0, 6.0d0]
   else
      m_loc = 2
