@@ -371,7 +371,7 @@ contains
 
     ! Finally do local SpMV using halo_values when needed
     do i = 1, m_loc
-       do j = rowptr(i-1), rowptr(i)-1
+       do j = rowptr(i), rowptr(i+1)-1
           jp = j+1 !becuz rowptr is 0-based
           if (colind(jp) >= halo%fst_row .and. colind(jp) <= halo%last_row) then
              y_local(i) = y_local(i) + nzval(jp) * x_local( colind(jp) - halo%fst_row )
