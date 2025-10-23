@@ -280,7 +280,7 @@ contains
     integer, intent(out) :: ierr
 
     integer :: i, j, jp, p, k, id
-    integer :: m_loc, first_row
+    integer :: m_loc, first_row, loc
     integer :: nprocs
     integer, parameter :: dp_kind = c_double
     integer :: reqs_count, total_reqs
@@ -374,7 +374,8 @@ contains
        do j = rowptr(i), rowptr(i+1)-1
           jp = j+1 !becuz rowptr is 0-based
           if (colind(jp) >= halo%fst_row .and. colind(jp) <= halo%last_row) then
-             y_local(i) = y_local(i) + nzval(jp) * x_local( colind(jp) - halo%fst_row )
+             loc =  colind(jp) - halo%fst_row + 1 !colind is 0-bases 
+             y_local(i) = y_local(i) + nzval(jp) * x_local(loc)
              print*, 'S:iam = ', myrank, 'local i, jp', i,  jp
           else
              ! find index into halo_cols
