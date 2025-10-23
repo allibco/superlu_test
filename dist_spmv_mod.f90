@@ -92,7 +92,6 @@ contains
        allocate(halo%recvcounts(0), halo%rdispls(0))
        allocate(halo%recv_from(0))
        if (allocated(tmp)) deallocate(tmp)
-       return
     end if
 
     ! 2) Make unique and sort 
