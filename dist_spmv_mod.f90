@@ -82,17 +82,6 @@ contains
        end do
     end do
 
-!!$    if (nn == 0) then 
-!!$       ! no halo needed (assign empty arrays)
-!!$       halo%nhalo = 0
-!!$       halo%nhalo_send=0
-!!$       allocate(halo%halo_cols(0), halo%col_owners(0))
-!!$       allocate(halo%send_cols(0), halo%send_to(0))
-!!$       allocate(halo%sendcounts(0), halo%sdispls(0))
-!!$       allocate(halo%recvcounts(0), halo%rdispls(0))
-!!$       allocate(halo%recv_from(0))
-!!$    end if
-
     ! 2) Make unique and sort 
     if (nn > 0) then
        call unique_sort_int(tmp, nn)
@@ -190,15 +179,15 @@ contains
     send_to_size = nowners
 
     
-    print *, 'D3: iam = ', myrank,'send_to_size =', send_to_size
-    print *, 'D3: iam = ', myrank,'recv_from_size =', recv_from_size
-    print *, 'D3: iam = ', myrank,'recv_from =', halo%recv_from
-    print *, 'D3: iam = ', myrank,'send_to =', halo%send_to
-    print *, 'D3: iam = ', myrank,'rdispls =', halo%rdispls
-    print *, 'D3: iam = ', myrank,'sdispls =', halo%sdispls
-    print *, 'D3: iam = ', myrank,'halo_cols =', halo%halo_cols
-    print *, 'D3: iam = ', myrank,'nhalo_send =', halo%nhalo_send
-    print *, 'D3: iam = ', myrank,'nhalo =', halo%nhalo
+    !print *, 'D3: iam = ', myrank,'send_to_size =', send_to_size
+    !print *, 'D3: iam = ', myrank,'recv_from_size =', recv_from_size
+    !print *, 'D3: iam = ', myrank,'recv_from =', halo%recv_from
+    !print *, 'D3: iam = ', myrank,'send_to =', halo%send_to
+    !print *, 'D3: iam = ', myrank,'rdispls =', halo%rdispls
+    !print *, 'D3: iam = ', myrank,'sdispls =', halo%sdispls
+    !print *, 'D3: iam = ', myrank,'halo_cols =', halo%halo_cols
+    !print *, 'D3: iam = ', myrank,'nhalo_send =', halo%nhalo_send
+    !print *, 'D3: iam = ', myrank,'nhalo =', halo%nhalo
 
     
     !need to do a communication to get the indices to send (so i send what i need to recv in halo_cols)
@@ -253,7 +242,7 @@ contains
     
     call MPI_Waitall(recv_from_size+send_to_size, requests, stats, ierr)
 
-    print *, 'D5: iam = ', myrank,'send_cols =', halo%send_cols
+    !print *, 'D5: iam = ', myrank,'send_cols =', halo%send_cols
 
     
     !print*,'DID WAITALL: iam = ', myrank
@@ -312,18 +301,6 @@ contains
     ! Zero output
     y_local = 0.0d0
 
-!!$    ! If no halo, simple local SpMV
-!!$    if (halo%nhalo == 0) then
-!!$       do i = 1, m_loc
-!!$          do j = rowptr(i), rowptr(i+1)-1
-!!$             jp = j+1
-!!$             loc = colind(jp) - halo%fst_row + 1
-!!$             y_local(i) = y_local(i) + nzval(jp) * x_local(loc )
-!!$          end do
-!!$       end do
-!!$       !don't return - may need to send some
-!!$    end if
-
     
     ! Build send buffer: extract x values for halo_cols, packed in send_order
     halo%sendbuf = 0.0
@@ -372,14 +349,14 @@ contains
        call MPI_Waitall(reqs_count, reqs, stats, ierr)
     end if
 
-    print *, 'MATVEC: iam = ', myrank,'SENDbuf =', halo%sendbuf
-    print *, 'MATVEC: iam = ', myrank,'RECVbuf =', halo%recvbuf
+    !print *, 'MATVEC: iam = ', myrank,'SENDbuf =', halo%sendbuf
+    !print *, 'MATVEC: iam = ', myrank,'RECVbuf =', halo%recvbuf
 
    ! for each owner O, the entries I receive from O correspond to
    ! those halo_cols i have whose owner == O, and in the same order as they appear in halo%send_cols for owner O.
    ! which matches my halo_cols by construction
 
-    print*,'IN spmv: iam = ', myrank, 'm_loc = ', m_loc
+    !print*,'IN spmv: iam = ', myrank, 'm_loc = ', m_loc
 
     ! Finally do local SpMV using halo_values when needed
     do i = 1, m_loc ! for each row
