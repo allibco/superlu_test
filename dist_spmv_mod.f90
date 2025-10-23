@@ -312,17 +312,17 @@ contains
     ! Zero output
     y_local = 0.0d0
 
-    ! If no halo, simple local SpMV
-    if (halo%nhalo == 0) then
-       do i = 1, m_loc
-          do j = rowptr(i), rowptr(i+1)-1
-             jp = j+1
-             loc = colind(jp) - halo%fst_row + 1
-             y_local(i) = y_local(i) + nzval(jp) * x_local(loc )
-          end do
-       end do
-       return
-    end if
+!!$    ! If no halo, simple local SpMV
+!!$    if (halo%nhalo == 0) then
+!!$       do i = 1, m_loc
+!!$          do j = rowptr(i), rowptr(i+1)-1
+!!$             jp = j+1
+!!$             loc = colind(jp) - halo%fst_row + 1
+!!$             y_local(i) = y_local(i) + nzval(jp) * x_local(loc )
+!!$          end do
+!!$       end do
+!!$       !don't return - may need to send some
+!!$    end if
 
     
     ! Build send buffer: extract x values for halo_cols, packed in send_order

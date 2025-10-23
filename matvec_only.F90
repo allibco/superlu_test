@@ -53,7 +53,7 @@ program small_superlu
      nnz_loc = 10
      allocate(rowptr(m_loc+1), colind(nnz_loc), nzval(nnz_loc), b(m_loc),  x(m_loc),  y(m_loc))
      rowptr = [0, 2, 4, 7, 10] !0-based
-     colind = [0, 1, 1, 2, 2, 3, 8, 3, 4, 13]
+     colind = [0, 1,  1, 2,  2, 3, 8,  3, 4, 13]
      nzval  = [1.0d0, 2.0d0, 3.0d0, 4.0d0, 5.0d0, 6.0d0, 1.0d0, 8.0d0, 3.0d0, 4.0d0]
      b = [1.0d0, 2.0d0, 5.0d0, 6.0d0]
   else if (iam ==1) then
@@ -80,7 +80,7 @@ program small_superlu
      nnz_loc = 7
      allocate(rowptr(m_loc+1), colind(nnz_loc), nzval(nnz_loc), b(m_loc),  x(m_loc),  y(m_loc))
      rowptr = [0, 3, 7] ! 0-based
-     colind = [11, 12, 13, 0,6, 12, 13 ]
+     colind = [11, 12, 13, 0, 6, 12, 13 ]
      nzval  = [1.0d0, 2.0d0, 1.0d0, 1.0d0, 2.0d0 , 1.0d0, 2.0d0]
      b = [15.0d0, 1.0d0]
 
