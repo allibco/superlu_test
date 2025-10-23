@@ -381,7 +381,7 @@ contains
              ! linear search; can be replaced with hash if halo large
              do k = 1, halo%nhalo
                 if (halo%halo_cols(k) == colind(jp)) then
-                   y_local(i) = y_local(i) + nzval(jp) * recvbuf(k)
+                   y_local(i) = y_local(i) + nzval(jp) * halo%recvbuf(k)
                    print*, 'S:iam = ', myrank, 'NOT local i, jp', i,  jp
 
                    exit
