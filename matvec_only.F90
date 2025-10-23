@@ -58,7 +58,7 @@ program small_superlu
      colind = [0, 1, 1, 2, 2, 3, 8, 3, 4, 13]
      nzval  = [1.0d0, 2.0d0, 3.0d0, 4.0d0, 5.0d0, 6.0d0, 1.0d0, 8.0d0, 3.0d0, 4.0d0]
      b = [1.0d0, 2.0d0, 5.0d0, 6.0d0]
-  else if (iam ==1)
+  else if (iam ==1) then
      m_loc = 4
      fst_row = 4
      nnz_loc = 9
@@ -67,7 +67,7 @@ program small_superlu
      colind = [1,4, 5, 8, 6,7, 6, 7,9 ]
      nzval  = [3.0d0, 4.0d0, 4.0d0, 6.0d0, 4.0d0, 5.0d0, 3.0d0 ,4.0d0, 6.0d0]
      b = [7.0d0, 8.0d0, 5.0d0, 5.0d0]
-  else if (iam ==2)
+  else if (iam ==2) then
      m_loc = 4
      fst_row = 8
      nnz_loc = 4
