@@ -124,8 +124,8 @@ contains
     allocate(halo%sendcounts(halo%nprocs_local))
     halo%sendcounts = 0
 
-    print *, 'D1: iam = ', myrank,'sendcounts:', halo%sendcounts
-    print *, 'D1: iam = ', myrank,'recvcounts:', halo%recvcounts
+    !print *, 'D1: iam = ', myrank,'sendcounts:', halo%sendcounts
+    !print *, 'D1: iam = ', myrank,'recvcounts:', halo%recvcounts
 
     
     call MPI_Alltoall(halo%recvcounts, 1, MPI_INTEGER, halo%sendcounts, 1, MPI_INTEGER, comm, ierr)
@@ -246,6 +246,9 @@ contains
     
     call MPI_Waitall(recv_from_size+send_to_size, requests, stats, ierr)
 
+    print *, 'D5: iam = ', myrank,'send_cols =', halo%send_cols
+
+    
     !print*,'DID WAITALL: iam = ', myrank
 
     !allocate the sendbuf and recvbuf here so they can be reusued
