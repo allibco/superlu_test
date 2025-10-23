@@ -73,11 +73,11 @@ program small_superlu
   if (iam == 0) then
      m_loc = 2
      fst_row = 0
-     nnz_loc = 5
+     nnz_loc = 6
      allocate(rowptr(m_loc+1), colind(nnz_loc), nzval(nnz_loc), b(m_loc), berr(nrhs),  x(m_loc),  y(m_loc))
-     rowptr = [0, 2, 5] !0-based
-     colind = [0, 1, 1, 2, 3]
-     nzval  = [1.0d0, 2.0d0, 3.0d0, 4.0d0, 1.0d0]
+     rowptr = [0, 3, 6] !0-based
+     colind = [0, 1, 3, 1, 2, 3]
+     nzval  = [1.0d0, 2.0d0, 1.0d0, 3.0d0, 4.0d0, 1.0d0]
      b = [5.0d0, 6.0d0]
   else
      m_loc = 2
@@ -106,39 +106,6 @@ program small_superlu
   print*,'AFTERs spmv: iam = ', iam, 'A*b = ', y
 
   
-!!$! Print some metadata
-!!$  print *, 'iam = ', iam, 'halo rank =', halo%rank
-!!$  print *, 'iam = ', iam,'nprocs_local =', halo%nprocs_local
-!!$  print *, 'iam = ', iam,'n_global =', halo%n_global
-!!$  print *, 'iam = ', iam,'m_loc =', halo%m_loc
-!!$  print *, 'iam = ', iam,'fst_row =', halo%fst_row, 'last_row =', halo%last_row
-!!$  print *, 'iam = ', iam,'nhalo =', halo%nhalo
-!!$  print *, 'iam = ', iam,'nhalo_send =', halo%nhalo_send
-
-!!$! Print integer arrays (halo columns and owners)
-!!$  if (halo%nhalo > 0) then
-!!$     print *, 'iam = ', iam,  'halo_cols:', halo%halo_cols(1:halo%nhalo)
-!!$     print *, 'iam = ', iam, 'col_owners:', halo%col_owners(1:halo%nhalo)
-!!$  end if
-!!$
-!!$  if (halo%nhalo_send > 0) then
-!!$     print *, 'iam = ', iam,  'send_cols:', halo%halo_cols(1:halo%nhalo)
-!!$     print *, 'iam = ', iam, 'send_to:', halo%col_owners(1:halo%nhalo)
-!!$  end if
-!!$
-!!$
-!!$  
-!!$! Print send/receive counts
-!!$  print *, 'iam = ', iam,'sendcounts:', halo%sendcounts
-!!$  print *, 'iam = ', iam,'sdispls:', halo%sdispls
-!!$  print *, 'iam = ', iam,'recvcounts:', halo%recvcounts
-!!$  print *, 'iam = ', iam,'rdispls:', halo%rdispls
-!!$  print *, 'iam = ', iam,'recv_from:', halo%recv_from
-!!$  print *, 'iam = ', iam,'send_to:', halo%send_to
-!!$
-!!$  
-!!$  !print *, "Rank", iam, "m_loc=", m_loc, "nnz_loc=", nnz_loc, "fst_row=", fst_row
-
   
   ! Create the distributed compressed row matrix pointed to by the F90 handle A
   call f_dCreate_CompRowLoc_Mat_dist(A, n, n, nnz_loc, m_loc, fst_row, &
