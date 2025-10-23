@@ -76,7 +76,7 @@ program small_superlu
      b = [10.0d0, 10.0d0, 10.0d0, 10.0d0]
   else !3
      m_loc = 2
-     fst_row = 10
+     fst_row = 12
      nnz_loc = 7
      allocate(rowptr(m_loc+1), colind(nnz_loc), nzval(nnz_loc), b(m_loc),  x(m_loc),  y(m_loc))
      rowptr = [0, 3, 7] ! 0-based
