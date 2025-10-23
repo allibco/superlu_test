@@ -367,7 +367,7 @@ contains
    ! those halo_cols i have whose owner == O, and in the same order as they appear in halo%send_cols for owner O.
    ! which matches my halo_cols by construction
 
-    print*,'IN spmv: iam = ', myrank, 'm_loc = ', m_lock
+    print*,'IN spmv: iam = ', myrank, 'm_loc = ', m_loc
 
     ! Finally do local SpMV using halo_values when needed
     do i = 1, m_loc
