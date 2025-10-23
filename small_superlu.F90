@@ -85,7 +85,7 @@ program small_superlu
      nnz_loc = 5
      allocate(rowptr(m_loc+1), colind(nnz_loc), nzval(nnz_loc), b(m_loc), berr(nrhs),  x(m_loc),  y(m_loc))
      rowptr = [0, 3, 5] ! 0-based
-     colind = [1, 2, 3, 3, 0]
+     colind = [1, 2, 3, 0, 3]
      nzval  = [5.0d0, 5.0d0, 6.0d0, 7.0d0, 8.0d0]
      b = [7.0d0, 8.0d0]
   end if
