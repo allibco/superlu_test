@@ -56,7 +56,7 @@ program small_superlu
      allocate(rowptr(m_loc+1), colind(nnz_loc), nzval(nnz_loc), b(m_loc),  x(m_loc),  y(m_loc))
      rowptr = [0, 2, 4, 7, 10] !0-based
      colind = [0, 1, 1, 2, 2, 3, 8, 3, 4, 13]
-     nzval  = [1.0d0, 2.0d0, 3.0d0, 4.0d0, 5.0d0, 6.0d0, 1.0, 8.0, 3.0. 4.0]
+     nzval  = [1.0d0, 2.0d0, 3.0d0, 4.0d0, 5.0d0, 6.0d0, 1.0d0, 8.0d0, 3.0d0, 4.0d0]
      b = [1.0d0, 2.0d0, 5.0d0, 6.0d0]
   else if (iam ==1)
      m_loc = 4
@@ -65,7 +65,7 @@ program small_superlu
      allocate(rowptr(m_loc+1), colind(nnz_loc), nzval(nnz_loc), b(m_loc),  x(m_loc),  y(m_loc))
      rowptr = [0, 2, 4, 6, 9] ! 0-based
      colind = [1,4, 5, 8, 6,7, 6, 7,9 ]
-     nzval  = [3.0d0, 4.0d0, 4.0d0, 6.0d0, 4.0d0, 5.0, 3.0 ,4.0, 6.0]
+     nzval  = [3.0d0, 4.0d0, 4.0d0, 6.0d0, 4.0d0, 5.0d0, 3.0d0 ,4.0d0, 6.0d0]
      b = [7.0d0, 8.0d0, 5.0d0, 5.0d0]
   else if (iam ==2)
      m_loc = 4
@@ -84,7 +84,7 @@ program small_superlu
      allocate(rowptr(m_loc+1), colind(nnz_loc), nzval(nnz_loc), b(m_loc),  x(m_loc),  y(m_loc))
      rowptr = [0, 3, 7] ! 0-based
      colind = [11, 12, 13, 0,6, 12, 13 ]
-     nzval  = [1.0d0, 2.0d0, 1.0d0, 1.0d0, 2.0 , 1.0, 2.0]
+     nzval  = [1.0d0, 2.0d0, 1.0d0, 1.0d0, 2.0d0 , 1.0d0, 2.0d0]
      b = [15.0d0, 1.0d0]
 
      
