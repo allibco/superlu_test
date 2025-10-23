@@ -82,21 +82,22 @@ contains
        end do
     end do
 
-    if (nn == 0) then 
-       ! no halo needed (assign empty arrays)
-       halo%nhalo = 0
-       halo%nhalo_send=0
-       allocate(halo%halo_cols(0), halo%col_owners(0))
-       allocate(halo%send_cols(0), halo%send_to(0))
-       allocate(halo%sendcounts(0), halo%sdispls(0))
-       allocate(halo%recvcounts(0), halo%rdispls(0))
-       allocate(halo%recv_from(0))
-       if (allocated(tmp)) deallocate(tmp)
-    end if
+!!$    if (nn == 0) then 
+!!$       ! no halo needed (assign empty arrays)
+!!$       halo%nhalo = 0
+!!$       halo%nhalo_send=0
+!!$       allocate(halo%halo_cols(0), halo%col_owners(0))
+!!$       allocate(halo%send_cols(0), halo%send_to(0))
+!!$       allocate(halo%sendcounts(0), halo%sdispls(0))
+!!$       allocate(halo%recvcounts(0), halo%rdispls(0))
+!!$       allocate(halo%recv_from(0))
+!!$    end if
 
     ! 2) Make unique and sort 
-    call unique_sort_int(tmp, nn)
-
+    if (nn > 0) then
+       call unique_sort_int(tmp, nn)
+    endif
+    
     halo%nhalo = nn
     allocate(halo%halo_cols(nn))
     halo%halo_cols = tmp(1:nn)
